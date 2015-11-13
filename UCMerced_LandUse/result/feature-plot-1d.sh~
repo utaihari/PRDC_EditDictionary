@@ -1,0 +1,31 @@
+#!/bin/sh
+ite1=1
+a=ite1
+echo "${1}"
+end=`expr ${2} + 1`
+while [ ${ite1} -ne $end ]
+do
+  ite2=`expr ${ite1} + 1`
+  #while [ ${ite2} -ne $end ]
+  #do
+    #echo "${ite1}-${ite2} "
+    #gnuplot -e "call "2dplot.plt" "${1}" "$a" "$b" "${a}-${b}.eps""
+    a=`expr ${ite1} + 1`
+    #b=`expr ${ite2} + 1`
+    gnuplot -e "
+               set key outside center top reverse horizontal;
+               set size 1.0,0.3;
+               set xrange [0.25:1.55];
+               set yrange [0.0:4.0];
+		set noytics;
+               set term  png transparent;
+               set out '/dev/null';
+               plot  '${1}' index 1 usi ${a}:(${a}*0+0) ti 'build' with po pt 7 lc rgb 'red' ps 0.7,'${1}' index 2 usi ${a}:(${a}*0+1) ti 'residense' with po pt 7 lc rgb 'blue' ps 0.7,'${1}' index 3 usi ${a}:(${a}*0+2) ti 'forest' with po pt 7 lc rgb 'green' ps 0.7,'${1}' index 4 usi ${a}:(${a}*0+3) ti 'intersection' with po pt 7 lc rgb 'orange' ps 0.7,'${1}' index 5 usi ${a}:(${a}*0+4) ti 'river' with po pt 7 lc rgb 'black' ps 0.7;
+               set out '${ite1}.png';
+               replot;
+               "
+    #ite2=`expr ${ite2} + 1`
+  #done
+  ite1=`expr ${ite1} + 1`
+done
+

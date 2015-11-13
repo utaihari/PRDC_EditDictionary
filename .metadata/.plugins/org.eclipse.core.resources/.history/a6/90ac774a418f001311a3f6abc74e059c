@@ -1,0 +1,1461 @@
+﻿#include<stdio.h>
+#include<time.h>	/* 実行時間計測の為 */
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+#include<float.h>
+#include<dirent.h>
+#include"ds.h"
+#include"lzw.h"
+#include"image2text.h"
+#include"bitIO.h"
+#include"chore.h"
+#include"cv-mst.h"
+#include"k-means.h"
+
+double** data_bkup;
+/*やっつけ作業変数(あとでちゃんと構造体を作る, Mind_Twist内のデータ受け渡し, 保存もその構造体を使えばスッキリするはず)*/
+int h_num,w_num,cutimage_size,quo_ul;
+int* memory;
+
+int Night_Dealings(int k,int d,double **cvec,double *deeled_pc);
+void Phyrexian_Splicer(int n,int st,int d,int k,patch_graph *pgr,int **don,int *donn);
+int Search_for_Tomorrow(int start_num,int cl_num,int data_num,patch_graph *pgr,patch_graph_edge *pgr_edge,classify *cl);
+void Mind_Twist(int n,mode m,int d,double cutedge_num,filenn fnn,patch_graph *pgr,int k);
+void Mind_Warp(int n,mode m,int d,double cutedge_num,filenn fnn,patch_graph *pgr,int k,point *dic);
+void only_image2text(int n,mode m,filenn fnn);
+void Broken_Visage(int image_num,int d,filenn fnn);
+int Extract(int n,mode m,int d,filenn fnn);
+
+/****************************************************************************
+* 関数名 : Mind_Twist
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : CV-MSTによる分割
+* 引数   : データ情報, クラスタ情報, クラスタ数, データ数, モード情報, 次元数
+* 戻り値 : なし
+****************************************************************************/
+//void Mind_Twist(int n,mode m,int d,double cutedge_num,filenn fnn,patch_graph *pgr,int k){
+//	int i,j,cnum=0;
+//	double rate;
+//	char dicname[64];
+//	char textname[64];
+//	FILE* fp;
+//	patch_graph_edge *pgr_edge;
+//
+//	fpos_t tsize,dsize;
+//	lzw_node** dics;
+//
+//	dics = initialize_dics(d,MAX_PHRASE_NUM);
+//	for(i=0;i<d;i++){
+//		sprintf(dicname,"%s/dic%d/dic%04d.dic",fnn.foldername,cutimage_size,memory[i]);
+//		if((fp = fopen(dicname,"rb"))==NULL){
+//			printf("file name miss\n");
+//			exit(1);
+//		}
+//		for(j=0;j<MAX_PHRASE_NUM;j++){
+//			dics[i][j].alphabet = get_bits(fp,DICW_SIZE);
+//			dics[i][j].brother = get_bits(fp,DICW_SIZE);
+//			dics[i][j].child = get_bits(fp,DICW_SIZE);
+//			dics[i][j].parent = get_bits(fp,DICW_SIZE);
+//			dics[i][j].flag = get_bits(fp,DICW_SIZE);
+//			dics[i][j].depth = get_bits(fp,DICW_SIZE);
+//		}
+//		fclose(fp);
+//	}
+//	printf("compression part\n");
+///*辞書作成*/
+//
+//
+//	Leveler(pgr,d,w_num,h_num);
+///*CVMSTの領域確保*/	
+//
+//
+//	for(i=0;i<n;i++){
+//		printf("%d/%d\n",i+1,n);
+//		sprintf(textname,"%s/%d/image%04d.txt",fnn.foldername,cutimage_size,i);
+//		/* textファイルのサイズ取得 */
+//		fp = fopen(textname,"rb");
+//		fseek(fp,0,SEEK_END);
+//		fgetpos(fp,&tsize);
+//		fclose(fp);
+//		for(j=0;j<d;j++){
+//			sprintf(dicname,"%s/image%04d_%02d.dic",fnn.foldername,i,j);
+//			initialize_file(textname,dicname);
+//			initilalize_work();
+//			encode_fix2(dics[j]);	/* フラグ有の圧縮 */
+//			finalize_file();
+//			/* 圧縮後のサイズ取得 */
+//			fp = fopen(dicname,"rb");
+//			fseek(fp,0,SEEK_END);
+//			fgetpos(fp,&dsize);
+//			fclose(fp);
+//			if(remove(dicname)!=0){
+//				printf("error\n");
+//			}
+//			rate = (double)dsize/(double)tsize;
+//			rate=rate/(double(BIT_SIZE)/8);
+//			pgr[i].cv_num[j]=rate;
+//		}
+//	}
+//	printf("Representation part\n");
+///*CV作成*/
+//
+//
+//	pgr_edge=(patch_graph_edge *)malloc(sizeof(patch_graph_edge)*(w_num-1+(2*w_num-1)*(h_num-1)));
+//	Cultivate(pgr,pgr_edge,m,d,n);
+///*CVMSTの情報入力*/
+//
+//
+//	cvmst(pgr,pgr_edge,d,n);
+//	Irrigation_Ditch(pgr,fnn,cutimage_size);
+//	/*実験用関数(後で多分消す)*/
+///*CV_MST作成(グラフのMST化)*/
+//
+//
+//	Mana_Severance(pgr,pgr_edge,cutedge_num,n,m);
+///*ヒストグラムで割合以上多いエッジを切る*/
+//
+//
+//	cnum=Rootbreaker_Wurm(pgr,pgr_edge,n);
+///*分割されたMSTパーツ毎に根ノード更新, 及びパッチの分類情報取得*/
+//
+//
+//	Arcbound_Worker(cutimage_size,pgr,cnum,fnn);
+//	Accumulated_Knowledge(pgr,pgr_edge,w_num-1+(2*w_num-1)*(h_num-1),n,d,cutimage_size,fnn,quo_ul);
+///*結果出力*/
+//
+//
+//	dics = finalize_dics(dics,d);
+//	free(dics);
+//	pgr=finalize_pgr(pgr,n);
+//	free(pgr);
+//	free(pgr_edge);
+///* 後始末 */
+//
+//
+//	printf("finished\n");
+//}
+
+/****************************************************************************
+* 関数名 : Night_Dealings
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 最もCVの近いクラスタに分類
+* 引数   : クラスタ数, 次元数, 各クラスタのCV値, 被分類パッチCV
+* 戻り値 : 所属クラスタ番号
+****************************************************************************/
+int Night_Dealings(int k,int d,double **cvec,double *deeled_pc){
+	int i,j,cave;
+	double sum,saval=DBL_MAX;
+
+	
+	for(i=0;i<k;i++){
+		sum=0;
+		for(j=0;j<d;j++){
+			sum+=(deeled_pc[j]-cvec[i][j])*(deeled_pc[j]-cvec[i][j]);
+		}
+		/*距離計算*/
+		if(saval>sum){
+			cave=i;
+			saval=sum;
+		}
+		/*最近クラスタなら距離と所属クラスタ更新*/
+	}
+
+
+	return cave;
+}
+
+
+/****************************************************************************
+* 関数名 : Phyrexian_Splicer
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 除外部分木を分類
+* 引数   : パッチ個数, 部分木数, 次元数, クラスタ数, pgr, 部分木データ二種
+* 戻り値 : なし
+****************************************************************************/
+void Phyrexian_Splicer(int n,int st,int d,int k,patch_graph *pgr,int **don,int *donn){
+	int i,j,l,ndst=0,save=0;
+	int *counter;
+	int *ndst_num;
+	double **ave_cvec;
+	double **ndst_cvec;
+
+
+	counter=(int *)malloc(sizeof(int)*k);
+	ave_cvec=(double **)malloc(sizeof(double *)*k);
+	for(i=0;i<k;i++){
+		ave_cvec[i]=(double *)malloc(sizeof(double)*d);
+		counter[i]=0;
+		for(j=0;j<d;j++){
+			ave_cvec[i][j]=0;
+		}
+	}
+	/*領域確保*/
+
+
+	for(i=0;i<st;i++){
+		if(!(pgr[don[i][0]].cl_num==-1)){
+			for(j=0;j<donn[i];j++){	
+				for(l=0;l<d;l++){
+					ave_cvec[pgr[don[i][j]].cl_num][l]+=data_bkup[don[i][j]][l];
+				}
+				counter[pgr[don[i][j]].cl_num]++;
+			}
+		}else{
+			ndst++;
+		}
+	}
+	for(i=0;i<k;i++){
+		for(j=0;j<d;j++){
+			ave_cvec[i][j]/=counter[i];
+		}
+	}
+	/*各クラスタ毎の平均CV計算*/
+
+
+	ndst_cvec=(double **)malloc(sizeof(double *)*ndst);
+	ndst_num=(int *)malloc(sizeof(int)*ndst);
+	for(i=0;i<st;i++){
+		if(pgr[don[i][0]].cl_num==-1){
+			ndst_num[save]=i;
+			ndst_cvec[save]=(double *)malloc(sizeof(double)*d);
+			for(j=0;j<d;j++){
+				ndst_cvec[save][j]=0;
+			}
+			for(j=0;j<donn[i];j++){
+				for(l=0;l<d;l++){
+					ndst_cvec[save][l]+=data_bkup[don[i][j]][l]/donn[i];
+				}
+			}
+			save++;
+		}
+	}
+	/*除外部分木の平均CV計算*/
+	
+
+	for(i=0;i<ndst;i++){
+		save=Night_Dealings(k,d,ave_cvec,ndst_cvec[i]);
+		for(j=0;j<donn[ndst_num[i]];j++){
+			pgr[don[ndst_num[i]][j]].cl_num=save;
+		}
+	}
+	/*除外部分木の分類*/
+
+
+	free(counter);
+	for(i=0;i<k;i++){
+		free(ave_cvec[i]);
+	}
+	free(ave_cvec);
+	for(i=0;i<n;i++){
+		free(data_bkup[i]);
+	}
+	free(data_bkup);
+	/*領域解放*/
+}
+
+/****************************************************************************
+* 関数名 : Search_for_Tomorrow
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : MSTをsimilar_fastで探索
+* 引数   : 開始ノード, 保存親番号, 保存子番号, pgr, pgr_edge, cl
+* 戻り値 : 次に使用する保存子番号
+****************************************************************************/
+int Search_for_Tomorrow(int start_num,int cl_num,int data_num,patch_graph *pgr,patch_graph_edge *pgr_edge,classify *cl){
+	int i,j,sa,counter=0;
+	int save[4];
+
+
+	pgr[start_num].root=-1;
+	/*探索済みパッチであるとする(rootに-1を代入), この操作で探索された部分木のrootは全て-1になる, これ以降rootを使用する場面はないので問題ない*/
+	cl[cl_num].data_num[data_num]=pgr[start_num].node_num;
+	data_num++;
+	/*データ入力*/
+
+
+	for(i=0;i<4;i++){
+		if(!(pgr[start_num].c_patch[i]==-1)&&pgr[start_num].pgredge[i]->mst_hrg&&!pgr[start_num].pgredge[i]->cutted_hrg&&!(pgr[pgr[start_num].c_patch[i]].root==-1)){
+		/*
+		 *!(pgr[start_num].c_patch[i]==-1)          :NULL PATCH
+		 *pgr[start_num].pgredge[i]->mst_hrg        :MSTであるか否か(MSTであれば調査)
+		 *!pgr[start_num].pgredge[i]->cutted_hrg    :cut edgeであるか否か(切られていなければ調査)
+		 *!(pgr[pgr[start_num].c_patch[i]].root==-1):探索済みパッチであるか否か(探索済みでなければ調査)
+		 */
+			save[counter]=pgr[start_num].c_patch[i];
+			counter++;
+		}		
+	}
+	/*4方向調査*/
+
+
+	for(i=0;i<counter;i++){
+		if(!(pgr[start_num].c_patch[i]==-1)&&!(pgr[save[i]].cl_num==pgr[start_num].cl_num)){
+		/*同じクラスタでなければ優先度を下げる*/
+			sa=save[i];
+			for(j=i;j<counter-1;j++){
+				save[j]=save[j+1];
+			}
+			save[j]=sa;
+			/*同じクラスタでなければ, 一番後ろへ*/
+		}
+	}
+	/*ソート*/
+
+
+	for(i=0;i<counter;i++){
+		data_num=Search_for_Tomorrow(save[i],cl_num,data_num,pgr,pgr_edge,cl);
+	}
+	/*再帰を用いて探索*/
+
+
+	return data_num;
+}
+
+/****************************************************************************
+* 関数名 : Mind_Twist
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : CV-MSTによる分割
+* 引数   : データ情報, クラスタ情報, クラスタ数, データ数, モード情報, 次元数
+* 戻り値 : なし
+****************************************************************************/
+void Mind_Twist(int n,mode m,int dd,double cutedge_num,filenn fnn,patch_graph *pgr,int k){
+	int i,j,d,t,save=0,hrg;
+	int *counter;
+	int *donn;
+	int **don;
+	double rate;
+	char imgname[64];
+	char dicname[64];
+	char textname[64];
+	fpos_t tsize,dsize;
+	IplImage* simage;
+	FILE* fp;
+	classify *cl;
+	classify *clcopy;
+	point *data;
+	patch_graph_edge *pgr_edge;
+	lzw_node** dics;
+
+
+	counter=(int *)malloc(sizeof(int)*n);
+	for(i=0;i<n;i++){
+		counter[i]=pgr[i].cl_num;
+	}
+	pgr_edge=(patch_graph_edge *)malloc(sizeof(patch_graph_edge)*(w_num-1+(2*w_num-1)*(h_num-1)));
+	Cultivate(pgr,pgr_edge,m,dd,n);
+/*CVMSTの情報入力*/
+
+
+	cvmst(pgr,pgr_edge,dd,n);
+	Irrigation_Ditch(pgr,fnn,cutimage_size);
+	/*実験用関数(後で多分消す)*/
+/*CV_MST作成(グラフのMST化)*/
+
+
+	Mana_Severance(pgr,pgr_edge,cutedge_num,n,m);
+/*ヒストグラムで割合以上多いエッジを切る*/
+
+
+	save=Rootbreaker_Wurm(pgr,pgr_edge,n);
+/*分割されたMSTパーツ毎に根ノード更新, 及びパッチの分類情報取得*/
+
+
+	Arcbound_Worker(cutimage_size,pgr,save,fnn);
+/*結果出力*/
+
+
+/*未整理プログラム*/
+	d=save;
+	cl=(classify *)malloc(sizeof(classify)*d);
+	for(i=0;i<d;i++){
+		cl[i].cnum=0;
+	}
+	for(i=0;i<n;i++){
+		cl[pgr[i].cl_num].cnum++;
+		pgr[i].cl_num=counter[i];
+	}
+	for(i=0;i<d;i++){
+		cl[i].data_num=(int *)malloc(sizeof(int)*cl[i].cnum);
+	}
+	j=0;
+	for(i=0;i<n;i++){
+		if(!(pgr[i].root==-1)){
+			Search_for_Tomorrow(i,j,0,pgr,pgr_edge,cl);
+			j++;
+		}
+	}
+	data=(point *)malloc(sizeof(point)*d);
+	for(i=0;i<d;i++){
+		data[i].cvector=(double *)malloc(sizeof(double)*d);
+		data[i].distance=DBL_MAX;
+		data[i].text_num=i;
+		data[i].hrg=1;
+	}
+	donn=(int *)malloc(sizeof(int)*d);
+	don=(int **)malloc(sizeof(int *)*d);
+	for(i=0;i<d;i++){
+		donn[i]=cl[i].cnum;
+		don[i]=(int *)malloc(sizeof(int)*donn[i]);
+		for(j=0;j<donn[i];j++){
+			don[i][j]=cl[i].data_num[j];
+		}
+	}
+	/*領域確保*/
+
+	
+	for(i=0;i<d;i++){
+		save=0;
+		sprintf(textname,"/home/ynakajima/satelite/%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,i);
+		if((fp = fopen(textname,"wb"))==NULL){
+			printf("error: no text file[%s]\n",textname);
+			exit(1);
+		}
+		for(j=0;j<cl[i].cnum;j++){
+			put_bits(fp,pgr[cl[i].data_num[j]].cl_num,BIT_SIZE);
+			save++;
+		}
+		data[i].nod=save;
+		fclose(fp);
+	}
+	/*テキスト書き出し*/
+
+
+	dics = initialize_dics(d,MAX_PHRASE_NUM);
+	if(!dics){
+		printf("memory securing miss (dics in [initialize_dics])\n");
+		exit(1);
+	}
+	for(i=0;i<d;i++){
+		sprintf(textname,"/home/ynakajima/satelite/%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,i);
+		sprintf(dicname,"/home/ynakajima/satelite/%s/%d/dic%04d#.txt",fnn.foldername,cutimage_size,i);
+		initialize_file(textname,dicname);
+		initilalize_work();
+		encode(dics[i]);
+		finalize_file();
+		if(remove(dicname)!=0){
+			printf("error");
+		}
+		sprintf(dicname,"/home/ynakajima/satelite/%s/%d/dic%04d.dic",fnn.foldername,cutimage_size,i);
+		if((fp = fopen(dicname,"wb"))==NULL){
+			printf("file name miss\n");
+			exit(1);
+		}
+		for(j=0;j<MAX_PHRASE_NUM;j++){
+			put_bits(fp,dics[i][j].alphabet,DICW_SIZE);
+			put_bits(fp,dics[i][j].brother,DICW_SIZE);
+			put_bits(fp,dics[i][j].child,DICW_SIZE);
+			put_bits(fp,dics[i][j].parent,DICW_SIZE);
+			put_bits(fp,dics[i][j].flag,DICW_SIZE);
+			put_bits(fp,dics[i][j].depth,DICW_SIZE);
+		}
+		fclose(fp);
+	}
+	/* 辞書の書き出し */
+
+
+	free(counter);
+	counter=(int *)malloc(sizeof(int)*d);
+	/*カウンタ初期化*/
+
+
+	pgr=finalize_pgr(pgr,n);
+	free(pgr);
+	free(pgr_edge);
+	pgr=(patch_graph *)malloc(sizeof(patch_graph)*n);
+	for(i=0;i<n;i++){
+		pgr[i].node_num=i;
+	}
+	for(i=0;i<d;i++){
+		for(j=0;j<cl[i].cnum;j++){
+			pgr[cl[i].data_num[j]].cl_num=i;
+		}
+	}
+	for(i=0;i<d;i++){
+		free(cl[i].data_num);
+	}
+	free(cl);
+	cl = (classify *)malloc(sizeof(classify)*dd);
+	for(i=0;i<dd;i++){
+		cl[i].coodinate=(double *)malloc(sizeof(double)*d);
+		cl[i].mindis=DBL_MAX;
+	}
+	free(counter);
+	/*中間処理*/
+
+
+	for(i=0;i<d;i++){
+		if(data[i].nod>m.nod_lim/*クラスタリングを行うと認めるノード数*/){
+			printf("%d/%d\n",i+1,d);
+			sprintf(textname,"/home/ynakajima/satelite/%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,i);
+			/* textファイルのサイズ取得 */
+			fp = fopen(textname,"rb");
+			fseek(fp,0,SEEK_END);
+			fgetpos(fp,&tsize);
+			fclose(fp);
+			for(j=0;j<d;j++){
+				sprintf(dicname,"/home/ynakajima/satelite/%s/%d/image%04d_%02d.dic",fnn.foldername,cutimage_size,i,j);
+				initialize_file(textname,dicname);
+				initilalize_work();
+				encode_fix2(dics[j]);	/* フラグ有の圧縮 */
+				finalize_file();
+				/* 圧縮後のサイズ取得 */
+				fp = fopen(dicname,"rb");
+				fseek(fp,0,SEEK_END);
+				fgetpos(fp,&dsize);
+				fclose(fp);
+				if(remove(dicname)!=0){
+					printf("error\n");
+				}
+				if(dsize.__pos%3){
+					dsize.__pos-=(((dsize.__pos+2)/3)+1);
+				}else{
+					dsize.__pos/=3;
+					dsize.__pos*=2;
+				}
+				rate = (double)dsize.__pos/(double)tsize.__pos;
+				data[i].cvector[j]=rate;
+			}
+		}else{
+			data[i].hrg=0;
+		}
+	}
+	printf("Representation part\n");
+	/*CV計算*/
+
+
+	m.km_style=1;
+	k_means(data,cl,dd,d,d,m);
+	/*k-Means分類*/
+
+
+	for(i=0;i<d;i++){
+		if(data[i].hrg){
+			if(data[i].distance<cl[data[i].clnum].mindis){			
+				cl[data[i].clnum].mindisdata=data[i].text_num;
+			}
+		}
+	}
+	for(i=0;i<dd;i++){
+		if(cl[i].cnum==0){
+			cl[i].mindisdata=0;
+		}
+	}
+	/*最近データ探索*/
+
+
+	counter=(int *)malloc(sizeof(int)*d);
+	for(i=0;i<d;i++){
+		counter[data[i].text_num]=data[i].nod;
+		if(!data[i].hrg){
+			counter[data[i].text_num]*=-1;
+		}
+		free(data[i].cvector);
+	}
+	free(data);
+	dics = finalize_dics(dics,d);
+	free(dics);
+	dics = initialize_dics(dd,MAX_PHRASE_NUM);
+	data=(point *)malloc(sizeof(point)*d);
+	for(i=0;i<d;i++){
+		data[i].cvector=(double *)malloc(sizeof(double)*dd);
+		data[i].distance=DBL_MAX;
+		data[i].text_num=i;
+		if(counter[i]<0){
+			data[i].hrg=0;
+			counter[i]*=-1;
+		}else{
+			data[i].hrg=1;
+		}
+		data[i].nod=counter[i];
+	}
+	free(counter);
+	/*辞書初期化*/
+	
+
+	for(i=0;i<dd;i++){
+		sprintf(textname,"/home/ynakajima/satelite/%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,cl[i].mindisdata);
+		sprintf(dicname,"/home/ynakajima/satelite/%s/%d/dic%04d#.txt",fnn.foldername,cutimage_size,cl[i].mindisdata);
+		initialize_file(textname,dicname);
+		initilalize_work();
+		encode(dics[i]);
+		finalize_file();
+		if(remove(dicname)!=0){
+			printf("error");
+		}
+		sprintf(dicname,"/home/ynakajima/satelite/%s/%d/dic%04d.dic",fnn.foldername,cutimage_size,cl[i].mindisdata);
+		if((fp = fopen(dicname,"wb"))==NULL){
+			printf("file name miss\n");
+			exit(1);
+		}
+		for(j=0;j<MAX_PHRASE_NUM;j++){
+			put_bits(fp,dics[i][j].alphabet,DICW_SIZE);
+			put_bits(fp,dics[i][j].brother,DICW_SIZE);
+			put_bits(fp,dics[i][j].child,DICW_SIZE);
+			put_bits(fp,dics[i][j].parent,DICW_SIZE);
+			put_bits(fp,dics[i][j].flag,DICW_SIZE);
+			put_bits(fp,dics[i][j].depth,DICW_SIZE);
+		}
+		fclose(fp);
+	}
+	/*再辞書作成*/
+
+
+	for(i=0;i<d;i++){
+		if(data[i].hrg){
+			printf("%d/%d\n",i+1,d);
+			sprintf(textname,"/home/ynakajima/satelite/%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,i);
+			/* textファイルのサイズ取得 */
+			fp = fopen(textname,"rb");
+			fseek(fp,0,SEEK_END);
+			fgetpos(fp,&tsize);
+			fclose(fp);
+			for(j=0;j<dd;j++){
+				sprintf(dicname,"/home/ynakajima/satelite/%s/%d/image%04d_%02d.dic",fnn.foldername,cutimage_size,i,j);
+				initialize_file(textname,dicname);
+				initilalize_work();
+				encode_fix2(dics[j]);	/* フラグ有の圧縮 */
+				finalize_file();
+				/* 圧縮後のサイズ取得 */
+				fp = fopen(dicname,"rb");
+				fseek(fp,0,SEEK_END);
+				fgetpos(fp,&dsize);
+				fclose(fp);
+				if(remove(dicname)!=0){
+					printf("error\n");
+				}
+				if(dsize.__pos%3){
+					dsize.__pos-=(((dsize.__pos+2)/3)+1);
+				}else{
+					dsize.__pos/=3;
+					dsize.__pos*=2;
+				}
+				rate = (double)dsize.__pos/(double)tsize.__pos;
+				data[i].cvector[j]=rate;
+			}
+		}
+	}
+	printf("Representation part\n");
+	/*再CV作成*/
+
+
+	counter=(int *)malloc(sizeof(int)*d);
+	save=0;
+	for(i=0;i<d;i++){
+		hrg=1;
+		if(data[i].hrg){
+			for(j=0;j<dd;j++){
+				if(m.nd_checker>=data[i].cvector[j]){
+					hrg=0;
+				}
+			}
+		}else{
+			hrg=0;
+		}
+		if(hrg){
+			for(j=0;j<dd;j++){
+				if(i==cl[j].mindisdata){
+					hrg=0;
+					break;
+				}
+			}
+		}
+		/*適合辞書チェック, nd_checker以上の圧縮率しかなければ, 適合辞書なしと判断*/
+		if(hrg){
+			counter[save]=i;
+			save++;
+		}
+	}
+	/*適合辞書の有無チェック*/
+	if(save){
+		if((clcopy=(classify *)realloc(cl,sizeof(classify)*(dd+save)))==NULL){
+			printf("error: memory securing miss for realloc.\n");
+			exit(1);
+		}else{
+			cl=clcopy;
+		}
+		/*追加領域確保*/
+		for(i=dd;i<dd+save;i++){
+			cl[i].coodinate=(double *)malloc(sizeof(double)*d);
+			cl[i].mindisdata=counter[i-dd];
+			cl[i].mindis=DBL_MAX;
+		}
+		/*clの追加データ入力*/
+		for(i=0;i<d;i++){
+			if((data[i].cvector=(double *)realloc(data[i].cvector,sizeof(double)*(dd+save)))==NULL){
+				printf("error: memory securing miss for realloc.\n");
+				exit(1);
+			}
+		}
+		/*追加領域確保*/
+		dics = finalize_dics(dics,dd);
+		free(dics);
+		dics = initialize_dics(dd+save,MAX_PHRASE_NUM);
+		/*辞書初期化*/
+		for(i=0;i<dd+save;i++){
+			sprintf(textname,"/home/ynakajima/satelite/%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,cl[i].mindisdata);
+			sprintf(dicname,"/home/ynakajima/satelite/%s/%d/dic%04d#.txt",fnn.foldername,cutimage_size,cl[i].mindisdata);
+			initialize_file(textname,dicname);
+			initilalize_work();
+			encode(dics[i]);
+			finalize_file();
+			if(remove(dicname)!=0){
+				printf("error");
+			}
+			sprintf(dicname,"%s/%d/dic%04d.dic",fnn.foldername,cutimage_size,cl[i].mindisdata);
+			if((fp = fopen(dicname,"wb"))==NULL){
+				printf("file name miss\n");
+				exit(1);
+			}
+			for(j=0;j<MAX_PHRASE_NUM;j++){
+				put_bits(fp,dics[i][j].alphabet,DICW_SIZE);
+				put_bits(fp,dics[i][j].brother,DICW_SIZE);
+				put_bits(fp,dics[i][j].child,DICW_SIZE);
+				put_bits(fp,dics[i][j].parent,DICW_SIZE);
+				put_bits(fp,dics[i][j].flag,DICW_SIZE);
+				put_bits(fp,dics[i][j].depth,DICW_SIZE);
+			}
+			fclose(fp);
+		}
+		/*再辞書作成*/
+		for(i=0;i<d;i++){
+			if(data[i].hrg){
+				printf("%d/%d\n",i+1,d);
+				sprintf(textname,"%s/%d/dic%04d.txt",fnn.foldername,cutimage_size,i);
+				/* textファイルのサイズ取得 */
+				fp = fopen(textname,"rb");
+				fseek(fp,0,SEEK_END);
+				fgetpos(fp,&tsize);
+				fclose(fp);
+				for(j=dd;j<dd+save;j++){
+					sprintf(dicname,"/home/ynakajima/satelite/%s/%d/image%04d_%02d.dic",fnn.foldername,cutimage_size,i,j);
+					initialize_file(textname,dicname);
+					initilalize_work();
+					encode_fix2(dics[j]);	/* フラグ有の圧縮 */
+					finalize_file();
+					/* 圧縮後のサイズ取得 */
+					fp = fopen(dicname,"rb");
+					fseek(fp,0,SEEK_END);
+					fgetpos(fp,&dsize);
+					fclose(fp);
+					if(remove(dicname)!=0){
+						printf("error\n");
+					}
+					if(dsize.__pos%3){
+						dsize.__pos-=(((dsize.__pos+2)/3)+1);
+					}else{
+						dsize.__pos/=3;
+						dsize.__pos*=2;
+					}
+					rate = (double)dsize.__pos/(double)tsize.__pos;
+					data[i].cvector[j]=rate;
+				}
+			}
+		}
+		/*CV作成*/
+	}
+	dd+=save;
+	free(counter);
+
+
+	m.km_style=0;
+	k_means(data,cl,k,dd,d,m);
+	/*再k-Means分類*/
+
+
+	counter=(int *)malloc(sizeof(int)*d);
+	for(i=0;i<d;i++){
+		if(data[i].hrg){
+			counter[data[i].text_num]=data[i].clnum;
+		}else{
+			counter[data[i].text_num]=-1;
+		}
+	}
+	for(i=0;i<n;i++){
+		pgr[i].cl_num=counter[pgr[i].cl_num];
+	}
+	/*データ移行*/
+
+
+	Phyrexian_Splicer(n,d,dd-save,k,pgr,don,donn);
+	/*除外部分木分類*/
+
+
+	Accumulated_Knowledge2(data,fnn,cutimage_size,d,dd,quo_ul);
+	Arcbound_Overseer2(pgr,n,k,cutimage_size,fnn);
+	/*クラスタリング結果書き出し*/
+
+
+ 	for(i=0;i<d;i++){
+		free(data[i].cvector);
+	}
+	for(i=0;i<k;i++){
+		free(cl[i].coodinate);
+	}
+	free(data);
+	free(cl);
+	free(pgr);
+	free(counter);
+	/*領域解放*/
+/*未整理プログラム*/
+
+
+	printf("finished\n");
+}
+
+/****************************************************************************
+* 関数名 : Mind_Warp
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : k-Meansによる分割
+* 引数   : データ情報, クラスタ情報, クラスタ数, データ数, モード情報, 次元数
+* 戻り値 : なし
+****************************************************************************/
+void Mind_Warp(int n,mode m,int d,double cutedge_num,filenn fnn,patch_graph *pgr,int k, point *dic){
+	int i,j;
+	double rate;
+	char dicname[128];
+	char textname[128];
+	char imgname[128];
+	fpos_t tsize,dsize;
+	IplImage* simage;
+	FILE* fp;
+	point *data;
+	classify *cl;
+	lzw_node** dics;
+
+
+	Leveler(pgr,d,n,n);
+/*CVMSTの領域確保*/	
+
+
+	dics = initialize_dics(d,MAX_PHRASE_NUM);
+
+	DIR *dir;
+    struct dirent *dp;
+    char path[64] = "/home/ynakajima/workspace/UCMerced_LandUse/basis_dict/";
+    dir=opendir(path);
+
+    i = 0;
+
+	for(dp=readdir(dir);dp!=NULL;dp=readdir(dir)){
+	    	if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+	    		continue;
+	    	}else{
+	    		sprintf(dicname,"/home/ynakajima/workspace/UCMerced_LandUse/basis_dict/%s",dp->d_name);
+	    		strcpy(dic[i].id,dp->d_name);
+	    		if((fp = fopen(dicname,"rb"))==NULL){
+	    		printf("file name miss\n");
+	    		exit(1);
+	    		}
+	    		for(j=0;j<MAX_PHRASE_NUM;j++){
+	    			dics[i][j].alphabet = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].brother = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].child = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].parent = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].flag = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].depth = get_bits(fp,DICW_SIZE);
+	    			//printf("%d \n",dics[i][j].flag);
+	    		}
+	    		i++;
+	    	}
+		fclose(fp);
+	}
+
+	closedir(dir);
+
+	printf("compression part\n");
+/*辞書作成*/
+
+	memset(path,0,sizeof(path));
+    strcpy(path,"/home/ynakajima/workspace/UCMerced_LandUse/learn_text/");
+    dir=opendir(path);
+
+    i=0;
+
+	for(dp=readdir(dir);dp!=NULL;dp=readdir(dir)){
+	    if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+	    	continue;
+	    }else{
+	    	sprintf(textname,"/home/ynakajima/workspace/UCMerced_LandUse/learn_text/%s",dp->d_name);
+	    	strcpy(pgr[i].id,dp->d_name);
+	    	/* textファイルのサイズ取得 */
+	    	fp = fopen(textname,"rb");
+	    	fseek(fp,0,SEEK_END);
+	    	fgetpos(fp,&tsize);
+	    	fclose(	fp);
+	    	for(j=0;j<d;j++){
+	    		sprintf(dicname,"/home/ynakajima/workspace/UCMerced_LandUse/learning/%s_%02d.dic",dp->d_name,j); //書き出さない
+	    		initialize_file(textname,dicname);
+	    		initilalize_work();
+	    		encode_fix2(dics[j]);	/* フラグ有の圧縮 */
+	    		finalize_file();
+	    		/* 圧縮後のサイズ取得 */
+	    		fp = fopen(dicname,"rb");
+	    		fseek(fp,0,SEEK_END);
+	    		fgetpos(fp,&dsize);
+	    		//printf("%s : %f\n",dicname,(double)tsize.__pos);
+	    		fclose(fp);
+	    		if(remove(dicname)!=0){
+	    			printf("error\n");
+	    		}
+	    		rate = (double)dsize.__pos/(double)tsize.__pos;
+	    		//printf("%f\n",rate);
+	    		pgr[i].cv_num[j]=rate;
+	    		//printf("%f\n",pgr[i].cv_num[j]);
+	    	}
+	    	i++;
+	    }
+	}
+
+	printf("%d\n",i);
+
+	closedir(dir);
+
+	printf("Representation part\n");
+/*CV作成*/
+
+
+	data = (point *)malloc(sizeof(point)*n);
+	for(i=0;i<n;i++){
+		data[i].cvector=(double *)malloc(sizeof(double)*d);
+		data[i].distance=DBL_MAX;/*最大値で初期化*/
+		data[i].text_num=i;
+		data[i].hrg=1;
+		data[i].nod=0;
+		strcpy(data[i].id,pgr[i].id);
+		for(j=0;j<d;j++){
+			data[i].cvector[j]=pgr[i].cv_num[j];
+			//printf("%f\n",data[i].cvector[j]);
+		}
+	}
+	cl = (classify *)malloc(sizeof(classify)*k);
+	for(i=0;i<k;i++){
+		cl[i].coodinate=(double *)malloc(sizeof(double)*d);
+		cl[i].mindis=DBL_MAX;
+	}
+	/*領域確保*/
+	m.km_style=1;
+	k_means(data,cl,k,d,n,m);
+/*k-Means分類*/
+
+
+	for(i=0;i<n;i++){
+		if(data[i].distance<cl[data[i].clnum].mindis){
+		   cl[data[i].clnum].mindisdata=data[i].text_num;
+		}
+	}
+	for(i=0;i<k;i++){
+		if(cl[i].cnum==0){
+
+			cl[i].mindisdata=0;
+		}
+	}
+/*最近データ探索*/
+
+	#ifdef bbb
+
+	for(i=0;i<n;i++){
+		free(data[i].cvector);
+	}
+	free(data);
+	dics = finalize_dics(dics,d);
+	free(dics);
+	dics = initialize_dics(d,MAX_PHRASE_NUM);
+
+
+/*辞書初期化*/
+
+    char path[64] = "/home/ynakajima/workspace/UCMerced_LandUse/basis_dict/";
+    dir=opendir(path);
+
+    i = 0;
+
+	for(dp=readdir(dir);dp!=NULL;dp=readdir(dir)){
+	    	if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+	    		continue;
+	    	}else{
+	    		sprintf(dicname,"/home/ynakajima/workspace/UCMerced_LandUse/basis_dict/%s",dp->d_name);
+	    		strcpy(dic[i].id,dp->d_name);
+	    		if((fp = fopen(dicname,"rb"))==NULL){
+	    		printf("file name miss\n");
+	    		exit(1);
+	    		}
+	    		for(j=0;j<MAX_PHRASE_NUM;j++){
+	    			dics[i][j].alphabet = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].brother = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].child = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].parent = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].flag = get_bits(fp,DICW_SIZE);
+	    			dics[i][j].depth = get_bits(fp,DICW_SIZE);
+	    			//printf("%d \n",dics[i][j].flag);
+	    		}
+	    		i++;
+	    	}
+		fclose(fp);
+	}
+
+	closedir(dir);
+
+
+	for(i=0;i<d;i++){
+		//j=cl[i].mindisdata;
+		//printf("%d\n",j);
+		sprintf(imgname,"/home/ynakajima/workspace/UCMerced_LandUse/learning/%s",cl[i].mindisdata);
+		sprintf(textname,"/home/ynakajima/satelite/%s/dic%04d.txt",fnn.foldername,j);
+		/* 画像を読み込む */
+		simage = cvLoadImage(imgname,CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+		if(!simage){
+			/* エラー処理 */
+			printf("error: no image file[%s]\n",imgname);
+			exit(1);
+		}
+		image2text(simage,textname,m);
+		sprintf(dicname,"/home/ynakajima/satelite/%s/dic%04d#.txt",fnn.foldername,i);
+		initialize_file(textname,dicname);
+		initilalize_work();
+		encode(dics[i]);
+		finalize_file();
+		if(remove(dicname)!=0){
+			printf("error");
+		}
+	}
+/*再辞書作成*/
+
+
+	for(i=0;i<n;i++){
+		printf("%d/%d\n",i+1,n);
+		sprintf(textname,"/home/ynakajima/satelite/%s/%d/image%04d.txt",fnn.foldername,cutimage_size,i);
+		/* textファイルのサイズ取得 */
+		fp = fopen(textname,"rb");
+		fseek(fp,0,SEEK_END);
+		fgetpos(fp,&tsize);
+		//	printf("%f\n",(double)tsize.__pos);
+		fclose(fp);
+		for(j=0;j<d;j++){
+			sprintf(dicname,"/home/ynakajima/satelite/%s/%d/image%04d_%02d.dic",fnn.foldername,cutimage_size,i,j);
+			initialize_file(textname,dicname);
+			initilalize_work();
+			encode_fix2(dics[j]);	/* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+			fp = fopen(dicname,"rb");
+			fseek(fp,0,SEEK_END);
+			dsize.__pos = 0;
+			fgetpos(fp,&dsize);
+			fclose(fp);
+
+			if(remove(dicname)!=0){
+				printf("error\n");
+			}
+			//printf("%f\n",(double)dsize.__pos);
+			if(dsize.__pos%3){
+			  //printf("a\n");
+				dsize.__pos-=(((dsize.__pos+2)/3)+1);
+			}else{
+			  //printf("b\n");
+				dsize.__pos/=3;
+				dsize.__pos*=2;
+			}
+			//printf("%f\n",(double)dsize.__pos);
+			rate = (double)dsize.__pos/(double)tsize.__pos;
+			pgr[i].cv_num[j]=rate;
+			//				printf("%f\n",rate);
+		}
+	}
+	printf("Representation part\n");
+/*再CV作成*/
+
+
+	data = (point *)malloc(sizeof(point)*n);
+	for(i=0;i<n;i++){
+		data[i].cvector=(double *)malloc(sizeof(double)*d);
+		data[i].distance=DBL_MAX;/*最大値で初期化*/
+		data[i].text_num=i;
+		data[i].hrg=1;
+		data[i].nod=0;
+		for(j=0;j<d;j++){
+			data[i].cvector[j]=pgr[i].cv_num[j];
+		}
+	}
+/*領域確保*/
+
+
+	m.km_style=0;
+	k_means(data,cl,k,d,n,m);
+/*再k-Means分類*/
+
+
+	data_bkup=(double **)malloc(sizeof(double *)*n);
+	for(i=0;i<n;i++){
+		pgr[data[i].text_num].cl_num=data[i].clnum;
+		data_bkup[i]=(double *)malloc(sizeof(double)*d);
+		for(j=0;j<d;j++){
+			data_bkup[data[i].text_num][j]=data[i].cvector[j];
+		}
+	}
+	/*データ移行*/
+	Arcbound_Overseer(pgr,n,k,cutimage_size,fnn);
+	/*クラスタリング結果書き出し(画像)*/
+	OutCVcsv(data,n,d,fnn,cutimage_size);
+
+
+	for(i=0;i<n;i++){
+		free(data[i].cvector);
+	}
+	for(i=0;i<k;i++){
+		free(cl[i].coodinate);
+	}
+	free(data);
+	free(cl);
+	/*領域解放*/
+/*k-Means分類*/
+
+	dics = finalize_dics(dics,d);
+	free(dics);
+/* 後始末 */
+
+#endif
+
+/*	data_bkup=(double **)malloc(sizeof(double *)*n);
+	for(i=0;i<n;i++){
+		pgr[data[i].text_num].cl_num=data[i].clnum;
+		data_bkup[i]=(double *)malloc(sizeof(double)*d);
+		for(j=0;j<d;j++){
+			data_bkup[data[i].text_num][j]=data[i].cvector[j];
+		}
+	}*/
+	/*データ移行*/
+	//Arcbound_Overseer(pgr,n,k,cutimage_size,fnn);
+	/*クラスタリング結果書き出し(画像)*/
+	OutCVcsv(data,n,d,fnn,cutimage_size,dic,k);
+
+	Accumulated_Knowledge(data,n,d,cutimage_size,quo_ul,dic);
+
+	for(i=0;i<n;i++){
+		free(data[i].cvector);
+	}
+	for(i=0;i<k;i++){
+		free(cl[i].coodinate);
+	}
+	free(data);
+	free(cl);
+	/*領域解放*/
+/*k-Means分類*/
+
+	dics = finalize_dics(dics,d);
+	free(dics);
+
+	printf("finished\n");
+}
+
+/****************************************************************************
+* 関数名 : only_image2text
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : 画像のテキスト化のみ行う
+* 引数   : 画像の数:n, モード:m
+* 戻り値 : なし
+****************************************************************************/
+void only_image2text(int n,mode m,filenn fnn){
+	int i;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+
+	DIR *dir;
+    struct dirent *dp;
+    char path[64] = "/home/ynakajima/workspace/UCMerced_LandUse/learning/";
+    dir=opendir(path);
+
+	for(dp=readdir(dir);dp!=NULL;dp=readdir(dir)){
+	    	if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+	    		continue;
+	    	}else{
+	    		//辞書作成
+	    		memset(imgname,0,sizeof(imgname));
+	    		sprintf(imgname,"/home/ynakajima/workspace/UCMerced_LandUse/learning/%s",dp->d_name);
+	    		sprintf(textname,"/home/ynakajima/workspace/UCMerced_LandUse/learn_text/%s.txt",dp->d_name);
+	    		 //画像を読み込む
+	    		simage = cvLoadImage(imgname,CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+	    		if(!simage){
+	    					/* エラー処理 */
+	    					printf("error: no image file[%s]\n",imgname);
+	    					exit(1);
+	    			}
+	    		cvCvtColor( simage, simage, CV_RGB2Lab);
+	    		image2text(simage,textname,m);
+	    	}
+	}
+
+	closedir(dir);
+}
+
+/****************************************************************************
+* 関数名 : Broken_Visage
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 辞書パッチ画像を辞書フォルダに写し替え
+* 引数   : 
+* 戻り値 : なし
+****************************************************************************/
+void Broken_Visage(int image_num,int d,filenn fnn){
+	int i,j;
+	FILE *fp;
+	IplImage* sat;
+	/*原画像保存変数*/
+	IplImage* dic;
+	/*原画像保存変数*/
+	CvScalar color;	/* 色情報 */
+	char originname[64],dicname[64];
+	sprintf(originname,"/home/ynakajima/satelite/%s/%d/image%04d.jpg",fnn.foldername,cutimage_size,image_num);
+	sat = cvLoadImage(originname,CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+	if(!sat){
+			/* エラー処理 */
+			printf("error: no image file[%s]\n",originname);
+			exit(1);
+	}
+	dic=cvCreateImage(cvSize(cutimage_size,cutimage_size),IPL_DEPTH_8U,3);
+	for(i=0;i<cutimage_size;i++){
+		for(j=0;j<cutimage_size;j++){
+			color = cvGet2D(sat,i,j); /* (x,y)の色情報取得 */
+			cvSet2D(dic,i,j,color);
+		}
+	}
+	sprintf(dicname,"/home/ynakajima/satelite/%s/dic%d/dic%04d.jpg",fnn.foldername,cutimage_size,image_num);
+	cvSaveImage(dicname,dic);
+
+	sprintf(dicname,"/home/ynakajima/satelite/%s/dic%d/dicnum_memory.txt",fnn.foldername,cutimage_size);
+	if((fp = fopen(dicname,"wb"))==NULL){
+		printf("file name miss\n");
+		exit(1);
+	}
+	fprintf(fp,"%d\n",d);
+	for(i=0;i<d;i++){
+		fprintf(fp,"%d\n",memory[i]);
+	}
+	fclose(fp);
+}
+
+/****************************************************************************
+* 関数名 : Extract
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 分割されたパッチの中からランダムで辞書を選び出す
+* 引数   : 辞書数:n, モード:m
+* 戻り値 : なし
+****************************************************************************/
+int Extract(int n,mode m,int d,filenn fnn){
+	int i,j,dic_num,hrg;
+	FILE *fp,*fp2;
+	IplImage* simage;
+	char bf[256];
+	char imgname[128];
+	char textname[128];
+	char dicname[128];
+	char jisyo[64];
+	
+	
+	if(m.randseed){
+		srand((unsigned)time(NULL));	/* 乱数系列の初期化 */
+	}
+	lzw_node** dics;
+	dics = initialize_dics(d,MAX_PHRASE_NUM);
+
+	DIR *dir;
+    struct dirent *dp;
+    char path[64] = "/home/ynakajima/workspace/UCMerced_LandUse/dictionary/";
+    dir=opendir(path);
+    i = 0;
+
+    for(dp=readdir(dir);dp!=NULL;dp=readdir(dir)){
+    	if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+    		continue;
+    	}else{
+    		//辞書作成
+    		memset(imgname,0,sizeof(imgname));
+    		sprintf(imgname,"/home/ynakajima/workspace/UCMerced_LandUse/dictionary/%s",dp->d_name);
+    		sprintf(textname,"/home/ynakajima/workspace/UCMerced_LandUse/basis_text/%s.txt",dp->d_name);
+    		 //画像を読み込む
+    		simage = cvLoadImage(imgname,CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+    		if(!simage){
+    					/* エラー処理 */
+    					printf("error: no image file[%s]\n",imgname);
+    					exit(1);
+    			}
+    	    //色空間の変換
+    	    cvCvtColor( simage, simage, CV_RGB2Lab);
+
+    	    if(!simage){
+    			//エラー処理
+    			printf("error: no image file[%s]\n",imgname);
+    			exit(1);
+    		}
+    	    printf("%s -> %s\n",imgname,textname);
+    		image2text(simage,textname,m);
+    		sprintf(dicname,"/home/ynakajima/workspace/UCMerced_LandUse/dictionary/%s.dic",dp->d_name); //書き出さない
+    		initialize_file(textname,dicname);
+    		initilalize_work();
+    		encode(dics[i]);
+    		finalize_file();
+    		if(remove(dicname)!=0){
+    			printf("error");
+    		}
+    		//辞書の書き出し
+    		memset(dicname,0,sizeof(dicname));
+    		sprintf(dicname,"/home/ynakajima/workspace/UCMerced_LandUse/basis_dict/%s.dic",dp->d_name);
+    		if((fp = fopen(dicname,"wb")) == NULL){
+    			printf("file name miss\n");
+    			exit(1);
+    		}
+
+    		for(j=0;j<MAX_PHRASE_NUM;j++){
+    			put_bits(fp,dics[i][j].alphabet,DICW_SIZE);
+    			put_bits(fp,dics[i][j].brother,DICW_SIZE);
+    			put_bits(fp,dics[i][j].child,DICW_SIZE);
+    			put_bits(fp,dics[i][j].parent,DICW_SIZE);
+    			put_bits(fp,dics[i][j].flag,DICW_SIZE);
+    			put_bits(fp,dics[i][j].depth,DICW_SIZE);
+    		}
+    		i++;
+
+    	}
+    	fclose(fp);
+			//printf("%s\n",dp->d_name);
+    }
+
+    closedir(dir);
+	dics = finalize_dics(dics,d);
+	free(dics);
+
+	/*後始末*/
+	return d;
+}
+
+/****************************************************************************
+* 関数名 : main
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : main
+* 引数   : 
+* 戻り値 : なし
+****************************************************************************/
+int main(int argc, char* argv[]){
+	int i;
+	int k,k2,d,n;	/* クラスタ数 k,クラスタ数2 k2,次元数 d,要素数 n */
+	double cutedge_pernum;
+	char originname[64];
+	filenn fnn;
+	patch_graph *pgr;
+	IplImage* sat;
+	FILE *fp;
+	char buf[10];
+	point *dic;
+
+	/* mode設定 */
+	mode m;
+	m.search = USE_DFSEARCH;/* 探索方法 */
+
+	/*実験パラメータ*/
+	m.sl_compression=1;
+	/*0==教師なし, 1==教師あり, 2==保存済み辞書利用*/
+	cutimage_size=64;
+	/*下層矩形パッチ作成のサイズ(cutimage_size*cutimage_size[pixel])*/
+	quo_ul=1;
+	/*上層と下層のパッチサイズの割合*/
+	cutedge_pernum=0.8;
+	/*MST分割の際のエッジを切る割合(下位(1-cutedge_parnum)[%/100]のエッジを切る)*/
+	m.leaf_check=1;
+	/*0==チェックしない, 1==分割前にチェック, 2==分割後にチェック(結局余り意味ないので使うかは未定)*/
+	m.foldername=7;
+	/*使用航空画像の選択(0==ゴルフ, 1==人工画像, 2==沿岸街, 3==調布, 4==泉, 5==田んぼ, 6==新宿駅)*/
+	m.per_cv=0;
+	/*エッジ重みのCV使用率の決定*/
+	m.nd_checker=1;
+	/*適合辞書無しと判断する圧縮率*/
+	m.randseed=0;
+	/*シードをランダムにするか否か(1==ランダム, 0==固定)*/
+	m.nod_lim=1;
+	/*除外部分木とするパッチの数*/
+
+
+	/*フォルダ選択*/
+	cutimage_size*=quo_ul;
+	/*上層は下層の[4]倍のパッチサイズ*/
+	sprintf(fnn.filename,"sateliteimage");
+	fnn.filenum=0;
+	m.per_color=1-m.per_cv;
+	/*エッジ重み使用率*/
+
+
+/*	sprintf(originname,"/home/ynakajima/satelite/%s/%s%04d.jpg",fnn.foldername,fnn.filename,fnn.filenum);
+	sat = cvLoadImage(originname,CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);*/
+
+	//色空間の変換
+	//cvCvtColor( sat, sat, CV_RGB2Lab);
+
+	//cvSaveImage("/home/ynakajima/satelite/source.jpg",sat);
+
+//  画像の確認
+	//cvNamedWindow("Image",CV_WINDOW_AUTOSIZE);
+    //cvShowImage("Image",sat);
+    //cvWaitKey(0);
+
+/*
+	if(!sat){
+		 エラー処理
+		printf("error: no image file[%s]\n",originname);
+		exit(1);
+	}
+*/
+
+	/*準備*/
+
+   //ファイル数をカウント
+   fp = popen("ls -1F /home/ynakajima/workspace/UCMerced_LandUse/dictionary | grep -v / | wc -l ","r");
+   fgets(buf,9,fp);
+   d = atoi(buf);
+   pclose(fp);
+
+   //d=Extract(n,m,d,fnn);/*辞書作成, 既存辞書使用の場合, 次元数更新(m.sl_compression=0 or 1 の場合dは変化しない)*/
+	/*辞書作成*/
+
+   fp = popen("ls -1F /home/ynakajima/workspace/UCMerced_LandUse/learning | grep -v / | wc -l ","r");
+   fgets(buf,9,fp);
+   n = atoi(buf);
+   pclose(fp);
+
+   k = 10;
+   only_image2text(n,m,fnn);	/* データの画像テキスト化 */
+	//	#ifdef DEBUG
+
+   pgr=(patch_graph *)malloc(sizeof(patch_graph)*(n)*(n));
+   dic=(point *)malloc(sizeof(point)*(d)*(d));
+
+	Mind_Warp(n,m,d,cutedge_pernum,fnn,pgr,k,dic);/*パッチの分類及び結果出力*/
+	/*CVを用いたクラスタリング*/
+
+#ifdef DEBUG
+
+	//#ifdef DEBUG
+	Mind_Twist(n,m,d,cutedge_pernum,fnn,pgr,k2);
+
+
+	Wrath_of_God(n,cutimage_size,fnn);
+	/*後始末*/
+			#endif
+}

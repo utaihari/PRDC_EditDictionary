@@ -1,0 +1,142 @@
+﻿#include<stdio.h>
+#include<stdlib.h>
+#include<time.h>
+#include "Kruskal.h"
+#include"msort.h"
+
+double ur,fr,sr;
+unsigned int urn,frn,srn;
+clock_t s1,e1,s2,e2,s3,e3;
+
+/****************************************************************************
+* 関数名 : unionRoot
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : 二つのノードが属する集合を統一する関数
+* 引数   : 対象ノード1:x, 対象ノード2:y
+* 戻り値 : なし
+****************************************************************************/
+void unionRoot(node* x, node* y){
+	urn++;
+	s3 = clock();
+	node* xroot,* yroot;
+	xroot = findRoot(x);
+	yroot = findRoot(y);
+	if(xroot->rank >= yroot->rank){
+		yroot->parent = xroot;
+		yroot->rank++;
+	}
+	else{
+		xroot->parent = yroot;
+		xroot->rank++;
+	}
+	e3 = clock();
+	ur += (double)(e3-s3)/CLOCKS_PER_SEC;
+}
+
+/****************************************************************************
+* 関数名 : findRoot
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : 引数のノードが属する集合のルートを探す関数
+* 引数   : ノード:x
+* 戻り値 : x or findRoot(x->parent)
+****************************************************************************/
+node* findRoot(node* x){
+	frn++;
+	s1 = clock();
+	if(x->parent == x){
+		e1 = clock();
+		fr += (double)(e1-s1)/CLOCKS_PER_SEC;
+		return x;
+	}else{
+	e1 = clock();
+	fr += (double)(e1-s1)/CLOCKS_PER_SEC;
+	return findRoot(x->parent);
+	}
+}
+
+/****************************************************************************
+* 関数名 : sameRoot
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : 二つのノードが属する集合が同じか調べる関数
+* 引数   : 対象ノード1:x, 対象ノード2:y
+* 戻り値 : 1 or 0
+****************************************************************************/
+int sameRoot(node* x, node* y){
+	srn++;
+	s2 = clock();
+	node* xroot,* yroot;
+	xroot = findRoot(x);
+	yroot = findRoot(y);
+	if(xroot == yroot){
+		e2 = clock();
+		sr += (double)(e2-s2)/CLOCKS_PER_SEC;
+		return 1;
+	}else{
+		e2 = clock();
+		sr += (double)(e2-s2)/CLOCKS_PER_SEC;
+		return 0;
+	}
+}
+
+/****************************************************************************
+* 関数名 : edgeComp
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : エッジの重みを比較する関数
+* 引数   : 比較対象1:_a, 比較対象2:_b
+* 戻り値 : 1 or -1 or 0
+****************************************************************************/
+int edgeComp(const void* _a,const void* _b){
+	edge* a = (edge *)_a;
+	edge* b = (edge *)_b;
+
+	return (a->weight - b->weight);
+}
+
+/****************************************************************************
+* 関数名 : kuraskal
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : クラスカル法を用いてMST化する関数
+* 引数   : エッジ集合:elist, エッジの数:edge_num, MSTエッジの数:mst_num
+* 戻り値 : なし
+****************************************************************************/
+void kuraskal(edge* elist,int edge_num,int mst_num){
+	int edge_cnt,mst_cnt;
+	int i;
+	ur=fr=sr=0;
+	urn=frn=srn=0;
+
+	//for(i=0; i<edge_num; i++)
+	//	printf("%d\n",elist[i].WFlag);
+	/* blistを重さが小さい順にソート */
+	qsort(elist,edge_num,sizeof(edge),edgeComp);
+	// msort(elist,edge_num,sizeof(edge),edgeComp);
+
+ 
+ //	for(i=0; i<edge_num; i++)
+ //	  	printf("%d\n",elist[i].WFlag);
+
+	edge_cnt=mst_cnt=0;
+	while(mst_cnt<mst_num){
+		/* もし辺が2つの木を連結するならまとめる */
+		if(!sameRoot(elist[edge_cnt].SN,elist[edge_cnt].EN)){
+			unionRoot(elist[edge_cnt].SN,elist[edge_cnt].EN);
+			elist[edge_cnt].MstFlag = 1;	/* MSTのフラグを立てる */
+			mst_cnt++;
+			
+		}
+		edge_cnt++;
+		//printf("%d\n",mst_cnt);
+	}
+	//for(i=0; i<edge_num; i++)
+  //printf("%d\n",elist[i].MstFlag);
+}

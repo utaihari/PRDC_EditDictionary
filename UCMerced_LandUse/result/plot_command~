@@ -1,0 +1,10 @@
+//前処理
+set view 60,320
+
+//3次元プロット
+
+splot "064-example.csv" index 1 usi 2:3:4 ti "build" with po pt 2,"064-example.csv" index 2 usi 2:3:4 ti "residense" with po pt 5,"064-example.csv" index 3 usi 2:3:4 ti "forest" with po pt 7,"064-example.csv" index 4 usi 2:3:4 ti "inter" with po pt 9,"064-example.csv" index 5 usi 2:3:4 ti "river" with po pt 1
+
+//3次元プロット（改良）
+splot [0:1] [0:1] [0:1] "064-example.csv" index 1 usi 2:3:4 ti "build" with po pt 7 lc rgb "red" ps 0.7,"064-example.csv" index 2 usi 2:3:4 ti "residense" with po pt 7 lc rgb "blue" ps 0.7,"064-example.csv" index 3 usi 2:3:4 ti "forest" with po pt 7 lc rgb "green" ps 0.7,"064-example.csv" index 4 usi 2:3:4 ti "intersection" with po pt 7 lc rgb "yellow" ps 0.7,"064-example.csv" index 5 usi 2:3:4 ti "river" with po pt 7 lc rgb "black" ps 0.7
+

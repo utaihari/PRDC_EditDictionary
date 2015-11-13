@@ -1,0 +1,45 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+################################################################################
+
+# Add inputs and outputs from these tool invocations to the build variables 
+CPP_SRCS += \
+../src/MasterResearch.cpp \
+../src/bitIO.cpp \
+../src/chore.cpp \
+../src/image2text.cpp \
+../src/k-means.cpp \
+../src/lzw.cpp \
+../src/main.cpp \
+../src/msort.cpp 
+
+OBJS += \
+./src/MasterResearch.o \
+./src/bitIO.o \
+./src/chore.o \
+./src/image2text.o \
+./src/k-means.o \
+./src/lzw.o \
+./src/main.o \
+./src/msort.o 
+
+CPP_DEPS += \
+./src/MasterResearch.d \
+./src/bitIO.d \
+./src/chore.d \
+./src/image2text.d \
+./src/k-means.d \
+./src/lzw.d \
+./src/main.d \
+./src/msort.d 
+
+
+# Each subdirectory must supply rules for building sources it contributes
+src/%.o: ../src/%.cpp
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C++ Compiler'
+	g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+

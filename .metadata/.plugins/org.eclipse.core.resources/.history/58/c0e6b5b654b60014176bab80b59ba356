@@ -1,0 +1,2707 @@
+﻿#define DICT_IMG "/home/ynakajima/workspace/UCMerced_LandUse/dictionary"
+#define TEST_IMG "/home/ynakajima/workspace/UCMerced_LandUse/test"
+//#define TEST_IMG "/home/ynakajima/workspace/UCMerced_LandUse/obvious"
+#define DICT_TXT "/home/ynakajima/workspace/UCMerced_LandUse/basis_text"
+#define LBP_DICT_TXT "/home/ynakajima/workspace/UCMerced_LandUse/basis_lbp_text"
+#define DICT_DIC "/home/ynakajima/workspace/UCMerced_LandUse/basis_dict"
+#define LBP_DICT_DIC "/home/ynakajima/workspace/UCMerced_LandUse/lbp_basis_dict"
+#define TEST_TXT "/home/ynakajima/workspace/UCMerced_LandUse/test_text"
+#define LBP_TEST_TXT "/home/ynakajima/workspace/UCMerced_LandUse/lbp_test_text"
+#define SEL_DIC "/home/ynakajima/workspace/UCMerced_LandUse/select_dict"
+#define LBP_SEL_DIC "/home/ynakajima/workspace/UCMerced_LandUse/lbp_select_dict"
+#define DIC_CAND "/home/ynakajima/workspace/UCMerced_LandUse/cand_dict"
+#define LBP_CAND "/home/ynakajima/workspace/UCMerced_LandUse/cand_lbp"
+//#define DIC_CAND "/home/ynakajima/workspace/UCMerced_LandUse/obvious"
+#define EXMPL_IMG "/home/ynakajima/workspace/UCMerced_LandUse/training"
+//#define EXMPL_IMG "/home/ynakajima/workspace/UCMerced_LandUse/obvious"
+#define EXMPL_TXT "/home/ynakajima/workspace/UCMerced_LandUse/training_text"
+#define LBP_EXMPL_TXT "/home/ynakajima/workspace/UCMerced_LandUse/lbp_training_text"
+#define OUTPUT "/home/ynakajima/workspace/UCMerced_LandUse/result"
+#define CNVRTED "/home/ynakajima/workspace/UCMerced_LandUse/converted_txt"
+
+#include<stdio.h>
+#include<time.h>	/* 実行時間計測の為 */
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+#include<float.h>
+#include<dirent.h>
+#include"lzw.h"
+#include"image2text.h"
+#include"bitIO.h"
+#include"chore.h"
+#include"cv-mst.h"
+#include"k-means.h"
+#include"ds.h"
+
+double** data_bkup = NULL;
+/*やっつけ作業変数(あとでちゃんと構造体を作る, Mind_Twist内のデータ受け渡し, 保存もその構造体を使えばスッキリするはず)*/
+int h_num, w_num, cutimage_size, quo_ul;
+int* memory;
+
+void only_image2text(int, mode, filenn, dict *);
+void lbp_only_image2text(int, mode, filenn, dict *);
+void Extract(mode, int, filenn, dict *);
+void ExtractLbp(mode, int, filenn, dict *);
+void SelectProposal(int, dict *, int, dict *, mode, int);
+void LbpSelectProposal(int, dict *, int, dict *, mode, int);
+int listComp(const void*, const void*);
+void str_eraser(char *, char *);
+void Labeling(int, dict *);
+void CompressExmpl(mode, int, dict *, dict *, dict *, int, patch_graph *);
+int listComp_asc(const void* a, const void* b);
+int listComp3(const void*, const void*);
+void CreateLbpImage(mode m, int d, filenn fnn, dict *candi_lbp);
+//int count_phrase(lzw_node*,lzw_node*);
+//void delete_dic(lzw_node*,lzw_node*);
+
+/****************************************************************************
+ * 関数名 : only_image2text
+ * 作成日 :
+ * 作成者 : S.Kobayashi
+ * 更新日 :
+ * 機能   : 画像のテキスト化のみ行う
+ * 引数   : 画像の数:n, モード:m
+ * 戻り値 : なし
+ ****************************************************************************/
+void only_image2text(int n, mode m, filenn fnn, dict *test) {
+	int i;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+	char split[] = ".tif";
+
+	DIR *dir;
+	struct dirent *dp;
+	dir = opendir(TEST_IMG);
+
+	i = 0;
+
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			//辞書作成
+			sprintf(test[i].id, "%s", dp->d_name);
+			str_eraser(test[i].id, split);
+			memset(imgname, 0, sizeof(imgname));
+			sprintf(imgname, TEST_IMG"/%s.tif", test[i].id);
+			sprintf(textname, TEST_TXT"/%s.txt", test[i].id);
+			if (m.text_cnvrt == 1) {
+				//画像を読み込む
+				simage = cvLoadImage(imgname,
+						CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+				if (!simage) {
+					/* エラー処理 */
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				cvCvtColor(simage, simage, CV_BGR2Lab);
+				if (m.convert == 0) {
+					image2text_mst(simage, textname, m);
+				} else if (m.convert == 1) {
+					image2text_horizon(simage, textname, m);
+				}
+			}
+		}
+		i++;
+	}
+
+	closedir(dir);
+}
+
+void lbp_only_image2text(int n, mode m, filenn fnn, dict *test) {
+	int i;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+	char split[] = ".tif";
+
+	DIR *dir;
+	struct dirent *dp;
+	dir = opendir(LBP_CAND);
+
+	i = 0;
+
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			//辞書作成
+			//printf("i = %d\n",i);
+			sprintf(test[i].id, "%s", dp->d_name);
+			str_eraser(test[i].id, split);
+			//printf("i = %d\n",i);
+			memset(imgname, 0, sizeof(imgname));
+			sprintf(imgname, LBP_CAND"/%s.tif", test[i].id);
+			sprintf(textname, LBP_TEST_TXT"/%s.txt", test[i].id);
+			//printf("i = %d\n",i);
+			if (m.text_cnvrt == 1) {
+				//画像を読み込む
+				simage = cvLoadImage(imgname,
+						CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+				if (!simage) {
+					/* エラー処理 */
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				//		cvCvtColor( simage, simage, CV_BGR2Lab);
+				image2text_lbp(simage, textname, m);
+			}
+		}
+		i++;
+		if (i == 500) {
+			break;
+		}
+	}
+
+	puts("aaa");
+	closedir(dir);
+}
+
+/****************************************************************************
+ * 関数名 : Extract
+ * 作成日 :
+ * 作成者 : Nakajima.M
+ * 更新日 :
+ * 機能   : 分割されたパッチの中からランダムで辞書を選び出す
+ * 引数   : 辞書数:n, モード:m
+ * 戻り値 : なし
+ ****************************************************************************/
+void Extract(mode m, int d, filenn fnn, dict *candi) {
+	int i, j;
+	FILE *fp, *fp2;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+	char dicname[128];
+	char filename[128];
+	fpos_t tsize, dsize;
+	char split[] = ".tif";
+
+	lzw_node** dics;
+	dics = initialize_dics(d, MAX_PHRASE_NUM);
+
+	DIR *dir;
+	struct dirent *dp;
+	if (m.select == 0) {
+		dir = opendir(DICT_IMG);
+	} else if (m.select == 1 || m.select == 2) {
+		dir = opendir(DIC_CAND);
+	}
+
+	i = 0;
+
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			//辞書作成
+			memset(imgname, 0, sizeof(imgname));
+			sprintf(candi[i].id, "%s", dp->d_name);
+			str_eraser(candi[i].id, split);
+			if (m.select == 0) {
+				sprintf(imgname, DICT_IMG"/%s.tif", candi[i].id);
+			} else if (m.select == 1 || m.select == 2) {
+				sprintf(imgname, DIC_CAND"/%s.tif", candi[i].id);
+			}
+			sprintf(textname, DICT_TXT"/%s.txt", candi[i].id);
+			if (m.text_cnvrt == 1) {
+				//画像を読み込む
+				simage = cvLoadImage(imgname,
+						CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+				if (!simage) {
+					/* エラー処理 */
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				//色空間の変換
+				cvCvtColor(simage, simage, CV_BGR2Lab);
+				if (!simage) {
+					//エラー処理
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				//printf("%s -> %s\n",imgname,textname);
+				if (m.convert == 0) {
+					image2text_mst(simage, textname, m);
+				} else if (m.convert == 1) {
+					image2text_horizon(simage, textname, m);
+				}
+				if ((fp = fopen(textname, "rb")) == NULL) {
+					printf("file name miss\n");
+					exit(1);
+				}
+				fseek(fp, 0, SEEK_END);
+				fgetpos(fp, &tsize);
+				//printf("(double)tsize.__pos=%f\n",(double)tsize.__pos);
+				fclose(fp);
+				sprintf(dicname, DICT_IMG"/%s.dic", candi[i].id); //書き出さない
+				initialize_file(textname, dicname);
+				initilalize_work();
+				encode(dics[i]);
+				finalize_file();
+				if (remove(dicname) != 0) {
+					printf("error");
+				}
+				//辞書の書き出し
+				memset(dicname, 0, sizeof(dicname));
+				sprintf(dicname, DICT_DIC"/%s.dic", candi[i].id);
+				if ((fp = fopen(dicname, "wb")) == NULL) {
+					printf("file name miss\n");
+					exit(1);
+				}
+
+				for (j = 0; j < MAX_PHRASE_NUM; j++) {
+					put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+					put_bits(fp, dics[i][j].brother, DICW_SIZE);
+					put_bits(fp, dics[i][j].child, DICW_SIZE);
+					put_bits(fp, dics[i][j].parent, DICW_SIZE);
+					put_bits(fp, dics[i][j].flag, DICW_SIZE);
+					put_bits(fp, dics[i][j].depth, DICW_SIZE);
+				}
+				// 		strcpy(candi[i].id,dp->d_name);
+				fclose(fp);
+			}
+			i++;
+		}
+	}
+
+	if (m.text_cnvrt == 1) {
+		sprintf(filename, OUTPUT"/srate.dat");
+		fp2 = fopen(filename, "w");
+
+		//自己圧縮率の計算
+		for (i = 0; i < d; i++) {
+			memset(dicname, 0, sizeof(dicname));
+			sprintf(dicname, DICT_IMG"/%d.dic", i); //書き出さない
+			memset(textname, 0, sizeof(textname));
+			sprintf(textname, DICT_TXT"/%s.txt", candi[i].id);
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[i]); //フラグ有の圧縮
+			finalize_file();
+			//圧縮後のサイズ取得
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			candi[i].self_rate = (double) dsize.__pos / (double) tsize.__pos;
+			fprintf(fp2, "%s %f \n", candi[i].id, candi[i].self_rate);
+			//printf("candi[%d].self_rate=%f/%f \n",i,(double)dsize.__pos,(double)tsize.__pos);
+		}
+
+		fclose(fp2);
+	}
+
+	closedir(dir);
+	dics = finalize_dics(dics, d);
+	free(dics);
+
+}
+
+/****************************************************************************
+ * 関数名 : CreateLbpImage
+ * 作成日 :
+ * 作成者 : Nakajima.M
+ * 更新日 :
+ * 機能   : 訓練画像の辞書の抽出(符号化はLBPを用いる)
+ * 引数   : 辞書数:n, モード:m
+ * 戻り値 : なし
+ ****************************************************************************/
+void CreateLbpImage(mode m, int d, filenn fnn, dict *candi) {
+	int i, j;
+	FILE *fp, *fp2;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+	char dicname[128];
+	char filename[128];
+	fpos_t tsize, dsize;
+	char split[] = ".tif";
+	int height;
+	int width;
+	int x, y, edge_num, mst_num;
+	CvScalar color;
+	node** graph = NULL;
+	int center;
+	int neighbor[8];
+
+	lzw_node** dics;
+	dics = initialize_dics(d, MAX_PHRASE_NUM);
+
+	DIR *dir;
+	struct dirent *dp;
+	if (m.select == 0) {
+		dir = opendir(DICT_IMG);
+	} else if (m.select == 1 || m.select == 2) {
+		dir = opendir(DIC_CAND);
+	}
+
+	i = 0;
+
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			//辞書作成
+			memset(imgname, 0, sizeof(imgname));
+			sprintf(candi[i].id, "%s", dp->d_name);
+			str_eraser(candi[i].id, split);
+			if (m.select == 0) {
+				sprintf(imgname, DICT_IMG"/%s.tif", candi[i].id);
+			} else if (m.select == 1 || m.select == 2) {
+				sprintf(imgname, DIC_CAND"/%s.tif", candi[i].id);
+			}
+			sprintf(textname, DICT_TXT"/%s.txt", candi[i].id);
+			//画像を読み込む
+			simage = cvLoadImage(imgname,
+					CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_GRAYSCALE);
+			if (!simage) {
+				/* エラー処理 */
+				printf("error: no image file[%s]\n", imgname);
+				exit(1);
+			}
+
+			graph = (node **) malloc(sizeof(node) * simage->width);
+			if (!graph) {
+				printf("memory securing misssss (graph)\n");
+				//return NULL;
+			}
+			for (j = 0; j < simage->width; j++) {
+				graph[j] = (node *) malloc(sizeof(node) * simage->height);
+				if (!graph[j]) {
+					printf("memory securing miss (graph[%d])\n", i);
+					//return NULL;
+				}
+			}
+
+			for (y = 1; y < simage->height - 1; y++) {
+				graph[x][y].clr.val[0] = 0;
+				for (x = 1; x < simage->width - 1; x++) {
+					/* 画素値を直接操作する一例 */
+					center = simage->imageData[simage->widthStep * y + x]; // B
+					neighbor[0] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* y + (x - 1)];
+					neighbor[1] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y + 1) + (x - 1)];
+					neighbor[2] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y + 1) + (x)];
+					neighbor[3] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y + 1) + (x + 1)];
+					neighbor[4] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y) + (x + 1)];
+					neighbor[5] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y - 1) + (x + 1)];
+					neighbor[6] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y - 1) + (x)];
+					neighbor[7] =
+							(unsigned char) simage->imageData[simage->widthStep
+									* (y - 1) + (x - 1)];
+
+					for (j = 0; j < 8; j++) {
+						if (center - neighbor[j] >= 0) {
+							graph[x][y].clr.val[0] += pow(2, 7 - j);
+						}
+					}
+				}
+			}
+
+			for (y = 1; y < simage->height - 1; y++) {
+				for (x = 1; x < simage->width - 1; x++) {
+					/* 画素値を直接操作する一例 */
+					simage->imageData[simage->widthStep * y + x] =
+							graph[x][y].clr.val[0]; // B
+					//printf("%d \n",(unsigned char)simage->imageData[simage->widthStep * y + x ]);
+				}
+			}
+			memset(filename, 0, sizeof(filename));
+			sprintf(filename, LBP_CAND"/%s.tif", candi[i].id);
+			cvSaveImage(filename, simage);
+			printf("i=%d %s\n", i, filename);
+			i++;
+		}
+	}
+
+	closedir(dir);
+	dics = finalize_dics(dics, d);
+	free(dics);
+
+}
+
+/****************************************************************************
+ * 関数名 : ExtractLbp
+ * 作成日 :
+ * 作成者 : Nakajima.M
+ * 更新日 :
+ * 機能   : 訓練画像の辞書の抽出(符号化はLBPを用いる)
+ * 引数   : 辞書数:n, モード:m
+ * 戻り値 : なし
+ ****************************************************************************/
+void ExtractLbp(mode m, int d, filenn fnn, dict *candi) {
+	int i, j;
+	FILE *fp, *fp2;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+	char dicname[128];
+	char filename[128];
+	fpos_t tsize, dsize;
+	char split[] = ".tif";
+
+	lzw_node** dics;
+	dics = initialize_dics(d, MAX_PHRASE_NUM);
+
+	DIR *dir;
+	struct dirent *dp;
+	if (m.select == 0) {
+		dir = opendir(DICT_IMG);
+	} else if (m.select == 1 || m.select == 2) {
+		dir = opendir(DIC_CAND);
+	}
+
+	i = 0;
+
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			//辞書作成
+			memset(imgname, 0, sizeof(imgname));
+			sprintf(candi[i].id, "%s", dp->d_name);
+			str_eraser(candi[i].id, split);
+			sprintf(imgname, LBP_CAND"/%s.tif", candi[i].id);
+			sprintf(textname, LBP_DICT_TXT"/%s.txt", candi[i].id);
+			printf("%s \n", imgname);
+			//画像を読み込む
+			if (m.text_cnvrt == 1) {
+				simage = cvLoadImage(imgname,
+						CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_GRAYSCALE);
+				if (!simage) {
+					/* エラー処理 */
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				//printf("%s -> %s\n",imgname,textname);
+				image2text_lbp(simage, textname, m);
+				if ((fp = fopen(textname, "rb")) == NULL) {
+					printf("file name miss\n");
+					exit(1);
+				}
+				fseek(fp, 0, SEEK_END);
+				fgetpos(fp, &tsize);
+				puts("aaa");
+				//printf("(double)tsize.__pos=%f\n",(double)tsize.__pos);
+				fclose(fp);
+				sprintf(dicname, DICT_IMG"/%s.dic", candi[i].id); //書き出さない
+				initialize_file(textname, dicname);
+				initilalize_work();
+				puts("aaa");
+				encode(dics[i]);
+				finalize_file();
+				if (remove(dicname) != 0) {
+					printf("error");
+				}
+				//辞書の書き出し
+				memset(dicname, 0, sizeof(dicname));
+				sprintf(dicname, LBP_DICT_DIC"/%s.dic", candi[i].id);
+				if ((fp = fopen(dicname, "wb")) == NULL) {
+					printf("file name miss\n");
+					exit(1);
+				}
+
+				for (j = 0; j < MAX_PHRASE_NUM; j++) {
+					put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+					put_bits(fp, dics[i][j].brother, DICW_SIZE);
+					put_bits(fp, dics[i][j].child, DICW_SIZE);
+					put_bits(fp, dics[i][j].parent, DICW_SIZE);
+					put_bits(fp, dics[i][j].flag, DICW_SIZE);
+					put_bits(fp, dics[i][j].depth, DICW_SIZE);
+				}
+				// 		strcpy(candi[i].id,dp->d_name);
+				fclose(fp);
+			}
+			i++;
+		}
+	}
+
+	closedir(dir);
+	dics = finalize_dics(dics, d);
+	free(dics);
+
+}
+
+/****************************************************************************
+ * 関数名 : Select_Dict
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : 候補の中から基底辞書を選ぶ
+ * 引数   :
+ * 戻り値 : なし
+ ****************************************************************************/
+void SelectProposal(int d, dict * candi, int num_basis, dict * sel_dict, mode m,
+		int t) {
+
+	int rnd;
+	double rate;
+	char textname[128];
+	char dicname[128];
+	char filename[128];
+	lzw_node** dics;
+	FILE *fp, *fp2;
+	int i, j, k;
+	fpos_t tsize, dsize;
+	struct dict *candidate;
+	struct dict *first;
+	struct dict **dic_list;
+	struct dict *temp_list;
+	int ret;
+
+	candidate = (struct dict *) malloc(sizeof(struct dict) * d);
+	first = (struct dict *) malloc(sizeof(struct dict));
+	dic_list = (struct dict **) malloc(sizeof(struct dict) * d);
+	temp_list = (struct dict *) malloc(sizeof(struct dict) * num_basis);
+
+	for (j = 0; j < d; j++) {
+		dic_list[j] = (struct dict *) malloc(sizeof(struct dict) * num_basis);
+		for (i = 0; i < num_basis; i++) {
+			dic_list[j][i].rate = 10000; //初期値
+		}
+	}
+
+	for (j = 0; j < d; j++) {
+		candidate[j].flag = 0;
+		candidate[j].sum_rate = 0;
+	}
+	dics = initialize_dics(num_basis, MAX_PHRASE_NUM);
+
+	if (m.text_cnvrt == 0) {
+
+		sprintf(filename, OUTPUT"/srate.dat");
+		if ((fp = fopen(filename, "r")) == NULL) {
+			printf("file open error \n");
+			exit(1);
+		}
+		i = 0;
+
+		while (i < d) {
+			fscanf(fp, "%s %lf", filename, &rate);
+			candi[i].self_rate = rate;
+			//printf("%s %s %f\n",filename,candi[i].id,candi[i].self_rate);
+			i++;
+		}
+		fclose(fp);
+	}
+
+	i = 0;
+
+	//1回目は辞書をランダムに選択
+	if (m.first_select == 0) {
+		rnd = rand() % d;
+		sprintf(dicname, DICT_DIC"/%s.dic", candi[rnd].id);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		printf("%d %s selected(first).\n", i, candi[rnd].id);
+		strcpy(first->id, candi[rnd].id);
+		//candidate[rnd].flag = 1;
+	} else {
+		qsort(candi, d, sizeof(struct dict), listComp3);
+		for (j = 0; j < d; j++) {
+			//printf("%s %f \n",candi[j].id,candi[j].self_rate);
+		}
+		if (m.first_select == 1) {
+			sprintf(dicname, DICT_DIC"/%s.dic", candi[t - 1].id);
+			strcpy(first->id, candi[t - 1].id);
+			printf("%d %s selected(first).\n", i, candi[t - 1].id);
+		} else if (m.first_select == 2) {
+			sprintf(dicname, DICT_DIC"/%s.dic", candi[d / 2].id);
+			strcpy(first->id, candi[d / 2].id);
+			printf("%d %s selected(first).\n", i, candi[d / 2].id);
+		} else if (m.first_select == 3) {
+			sprintf(dicname, DICT_DIC"/%s.dic", candi[d - 1].id);
+			strcpy(first->id, candi[d - 1].id);
+			printf("%d %s selected(first).\n", i, candi[d - 1].id);
+		}
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+	}
+
+	//for(j = 0; j < d; j++){
+	//printf("%s %f\n",candi[j].id,candi[j].self_rate);
+	//}
+
+	for (j = 0; j < MAX_PHRASE_NUM; j++) {
+		dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+		dics[i][j].brother = get_bits(fp, DICW_SIZE);
+		dics[i][j].child = get_bits(fp, DICW_SIZE);
+		dics[i][j].parent = get_bits(fp, DICW_SIZE);
+		dics[i][j].flag = get_bits(fp, DICW_SIZE);
+		dics[i][j].depth = get_bits(fp, DICW_SIZE);
+	}
+	fclose(fp);
+
+	memset(dicname, 0, sizeof(dicname));
+	//sprintf(dicname,SEL_DIC"/%s.dic",candi[0].id);
+	if (m.first_select == 0) {
+		sprintf(dicname, SEL_DIC"/%s.dic", candi[rnd].id);
+	} else if (m.first_select == 1) {
+		sprintf(dicname, SEL_DIC"/%s.dic", candi[t - 1].id);
+	} else if (m.first_select == 2) {
+		sprintf(dicname, SEL_DIC"/%s.dic", candi[d / 2].id);
+	} else if (m.first_select == 3) {
+		sprintf(dicname, SEL_DIC"/%s.dic", candi[d - 1].id);
+	}
+
+	for (j = 0; j < d; j++) {
+		memset(textname, 0, sizeof(textname));
+		//if( i == 0){
+		//sprintf(textname,DICT_TXT"/%s.txt",candi[rnd].id);
+		//}else{
+		sprintf(textname, DICT_TXT"/%s.txt", candi[j].id);
+		//}
+		fp = fopen(textname, "rb");
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, DICT_IMG"/%d.dic", j); //書き出さない
+		initialize_file(textname, dicname);
+		initilalize_work();
+		encode_fix2(dics[i]);
+		finalize_file();
+		fp = fopen(dicname, "rb");
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &dsize);
+		fclose(fp);
+		if (remove(dicname) != 0) {
+			printf("error");
+		}
+		strcpy(candidate[j].id, candi[j].id);
+		//candi[j].sum_rate = fabs((double)dsize.__pos/(double)tsize.__pos);
+		//method4:　method3に自己圧縮率を使わない
+		candidate[j].sum_rate += (double) dsize.__pos / (double) tsize.__pos;
+		candidate[j].rate = candidate[j].sum_rate;
+		//for(j=0; j<d; j++){
+		//printf("%s %f %d\n",candidate[j].id,candidate[j].rate,candidate[j].flag);
+		//}
+		qsort(candidate, d, sizeof(struct dict), listComp);
+		//puts("sorted!!!!!!!!!!!!!!!!!!!!!!");
+		//for(j=0; j<d; j++){
+		//		printf("%s %f %d\n",candidate[j].id,candidate[j].rate,candidate[j].flag);
+		//}
+	}
+
+	while (i < num_basis) {
+		for (j = 0; j < d; j++) {
+			if (candidate[j].flag == 0) {
+				memset(dicname, 0, sizeof(dicname));
+				sprintf(dicname, DICT_DIC"/%s.dic", candidate[j].id);
+				if ((fp = fopen(dicname, "rb")) == NULL) {
+					printf("file name miss\n");
+					exit(1);
+				}
+				//printf("d = %d\n",j);
+				candidate[j].flag = 1;
+				k = j;
+				break;
+			}
+		}
+		//printf("%d %s selected.\n",i,candidate[k].id);
+		strcpy(sel_dict[i].id, candidate[k].id);
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, SEL_DIC"/%s.dic", candidate[k].id);
+
+		if ((fp = fopen(dicname, "wb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+			put_bits(fp, dics[i][j].brother, DICW_SIZE);
+			put_bits(fp, dics[i][j].child, DICW_SIZE);
+			put_bits(fp, dics[i][j].parent, DICW_SIZE);
+			put_bits(fp, dics[i][j].flag, DICW_SIZE);
+			put_bits(fp, dics[i][j].depth, DICW_SIZE);
+		}
+		fclose(fp);
+
+		for (j = 0; j < d; j++) {
+			memset(textname, 0, sizeof(textname));
+			sprintf(textname, DICT_TXT"/%s.txt", candi[j].id);
+			fp = fopen(textname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &tsize);
+			fclose(fp);
+			memset(dicname, 0, sizeof(dicname));
+			sprintf(dicname, DICT_IMG"/%d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[i]);
+			finalize_file();
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error");
+			}
+			//method4:　method3に自己圧縮率を使わない
+			if (m.criteria == 1) {
+				candidate[j].sum_rate += (double) dsize.__pos
+						/ (double) tsize.__pos;
+				candidate[j].rate = candidate[j].sum_rate;
+			} else if (m.criteria == 2) {
+				dic_list[j][i].rate = (double) dsize.__pos
+						/ (double) tsize.__pos;
+				for (k = 0; k < num_basis; k++) {
+					temp_list[k].rate = dic_list[j][k].rate;
+				}
+				if (i != 0) {
+					qsort(temp_list, num_basis, sizeof(struct dict),
+							listComp_asc);
+				}
+				candidate[j].rate = temp_list[0].rate;
+			}
+
+			//		printf("candidate[%d].rate = %f\n",j,candidate[j].rate);
+		}
+		qsort(candidate, d, sizeof(struct dict), listComp);
+		i++;
+	}
+
+	int count;
+
+	for (i = 1; i < num_basis; i++) {
+		for (k = 0; k < i; k++) {
+			count = count_phrase(dics[i], dics[k]);
+//			printf("match dic[%d],dic[%d] : %d\n",i,k,count+256);
+		}
+	}
+
+	for (i = 0; i < num_basis; i++) {
+		count = count_phrase(dics[i], dics[i]);
+//		printf("match dic[%d],dic[%d] : %d\n",i,i,count+256);
+		//printf("-------dic%d phrase-------\n",i);
+		//output_phrase(dics[i]);
+	}
+
+	if (m.del_dic == 1) {
+		for (i = 1; i < num_basis; i++) {
+			dics[i]->pre_phrase_num = count_phrase(dics[i], dics[i]);
+			for (k = 0; k < i; k++) {
+				//	printf("dic[%d], dic[%d]",k,i);
+				delete_cophrase(dics[k], dics[i]);
+			}
+//			printf("dic[%d]: ",i);
+			if (m.add == 1) {
+				compensate_phrase(dics[i]);
+				revise_flag(dics[i]);
+			}
+		}
+	}
+
+//
+	for (i = 1; i < num_basis; i++) {
+		for (k = 0; k < i; k++) {
+			count = count_phrase(dics[i], dics[k]);
+//				printf("match dic[%d],dic[%d] : %d\n",i,k,count);
+		}
+	}
+//
+	for (i = 0; i < num_basis; i++) {
+		count = count_phrase(dics[i], dics[i]);
+//		printf("match dic[%d],dic[%d] : %d\n",i,i,count+256);
+	}
+
+//	if(m.del_dic == 1){
+//		for(i=1; i<num_basis; i++){
+//			for(k=0; k<i; k++){
+//				delete_cophrase(dics[k],dics[i]);
+//			}
+//		}
+//	}
+//
+//	for(i=0; i<num_basis; i++){
+//		count = count_phrase(dics[i],dics[i]);
+//		printf("match dic[%d],dic[%d] : %d\n",i,i,count+256);
+//	}
+
+	if (m.del_dic == 1) {
+		puts("deleted!!!");
+		//system("rm "SEL_DIC"/*");
+		//#ifdef CCC
+		for (i = 0; i < num_basis; i++) {
+			memset(dicname, 0, sizeof(dicname));
+			//printf(SEL_DIC"/%s.dic\n",sel_dict[i].id);
+
+			sprintf(dicname, SEL_DIC"/%s.dic", sel_dict[i].id);
+
+			if ((fp = fopen(dicname, "wb")) == NULL) {
+				printf("file name miss\n");
+				exit(1);
+			}
+
+			for (j = 0; j < MAX_PHRASE_NUM; j++) {
+				put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+				put_bits(fp, dics[i][j].brother, DICW_SIZE);
+				put_bits(fp, dics[i][j].child, DICW_SIZE);
+				put_bits(fp, dics[i][j].parent, DICW_SIZE);
+				put_bits(fp, dics[i][j].flag, DICW_SIZE);
+				put_bits(fp, dics[i][j].depth, DICW_SIZE);
+			}
+
+			fclose(fp);
+
+			//		printf("candidate[%d].rate = %f\n",j,candidate[j].rate);
+		}
+	}
+
+//#endif
+
+	free(candidate);
+	free(first);
+	free(temp_list);
+	dics = finalize_dics(dics, num_basis);
+	free(dics);
+}
+
+void LbpSelectProposal(int d, dict * candi, int num_basis, dict * sel_dict,
+		mode m, int t) {
+
+	int rnd;
+	double rate;
+	char textname[128];
+	char dicname[128];
+	char filename[128];
+	lzw_node** dics;
+	FILE *fp, *fp2;
+	int i, j, k;
+	fpos_t tsize, dsize;
+	struct dict *candidate;
+	struct dict *first;
+	struct dict **dic_list;
+	struct dict *temp_list;
+	int ret;
+	float min;
+
+	candidate = (struct dict *) malloc(sizeof(struct dict) * d);
+	first = (struct dict *) malloc(sizeof(struct dict));
+	dic_list = (struct dict **) malloc(sizeof(struct dict) * d);
+	temp_list = (struct dict *) malloc(sizeof(struct dict) * num_basis);
+
+	for (j = 0; j < d; j++) {
+		dic_list[j] = (struct dict *) malloc(sizeof(struct dict) * num_basis);
+		for (i = 0; i < num_basis; i++) {
+			dic_list[j][i].rate = 10000; //初期値
+		}
+	}
+
+	for (j = 0; j < d; j++) {
+		candidate[j].flag = 0;
+		candidate[j].sum_rate = 0;
+	}
+	dics = initialize_dics(num_basis, MAX_PHRASE_NUM);
+
+	if (m.text_cnvrt == 0) {
+
+		sprintf(filename, OUTPUT"/srate.dat");
+		if ((fp = fopen(filename, "r")) == NULL) {
+			printf("file open error \n");
+			exit(1);
+		}
+		i = 0;
+
+		while (i < d) {
+			fscanf(fp, "%s %lf", filename, &rate);
+			candi[i].self_rate = rate;
+			//printf("%s %s %f\n",filename,candi[i].id,candi[i].self_rate);
+			i++;
+		}
+		fclose(fp);
+	}
+
+	i = 0;
+
+	//1回目は辞書をランダムに選択
+	if (m.first_select == 0) {
+		rnd = rand() % d;
+		sprintf(dicname, LBP_DICT_DIC"/%s.dic", candi[rnd].id);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		printf("%d %s selected(first).\n", i, candi[rnd].id);
+		strcpy(first->id, candi[rnd].id);
+		//candidate[rnd].flag = 1;
+	} else {
+		qsort(candi, d, sizeof(struct dict), listComp3);
+		for (j = 0; j < d; j++) {
+			//printf("%s %f \n",candi[j].id,candi[j].self_rate);
+		}
+		if (m.first_select == 1) {
+			sprintf(dicname, LBP_DICT_DIC"/%s.dic", candi[t - 1].id);
+			strcpy(first->id, candi[t - 1].id);
+			printf("%d %s selected(first).\n", i, candi[t - 1].id);
+		} else if (m.first_select == 2) {
+			sprintf(dicname, LBP_DICT_DIC"/%s.dic", candi[d / 2].id);
+			strcpy(first->id, candi[d / 2].id);
+			printf("%d %s selected(first).\n", i, candi[d / 2].id);
+		} else if (m.first_select == 3) {
+			sprintf(dicname, LBP_DICT_DIC"/%s.dic", candi[d - 1].id);
+			strcpy(first->id, candi[d - 1].id);
+			printf("%d %s selected(first).\n", i, candi[d - 1].id);
+		}
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+	}
+
+	//for(j = 0; j < d; j++){
+	//printf("%s %f\n",candi[j].id,candi[j].self_rate);
+	//}
+
+	for (j = 0; j < MAX_PHRASE_NUM; j++) {
+		dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+		dics[i][j].brother = get_bits(fp, DICW_SIZE);
+		dics[i][j].child = get_bits(fp, DICW_SIZE);
+		dics[i][j].parent = get_bits(fp, DICW_SIZE);
+		dics[i][j].flag = get_bits(fp, DICW_SIZE);
+		dics[i][j].depth = get_bits(fp, DICW_SIZE);
+	}
+	fclose(fp);
+
+	memset(dicname, 0, sizeof(dicname));
+	//sprintf(dicname,SEL_DIC"/%s.dic",candi[0].id);
+	if (m.first_select == 0) {
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candi[rnd].id);
+	} else if (m.first_select == 1) {
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candi[t - 1].id);
+	} else if (m.first_select == 2) {
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candi[d / 2].id);
+	} else if (m.first_select == 3) {
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candi[d - 1].id);
+	}
+
+	for (j = 0; j < d; j++) {
+		memset(textname, 0, sizeof(textname));
+		//if( i == 0){
+		//sprintf(textname,DICT_TXT"/%s.txt",candi[rnd].id);
+		//}else{
+		sprintf(textname, LBP_DICT_TXT"/%s.txt", candi[j].id);
+		//}
+		fp = fopen(textname, "rb");
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, DICT_IMG"/%d.dic", j); //書き出さない
+		initialize_file(textname, dicname);
+		initilalize_work();
+		encode_fix2(dics[i]);
+		finalize_file();
+		fp = fopen(dicname, "rb");
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &dsize);
+		fclose(fp);
+		if (remove(dicname) != 0) {
+			printf("error");
+		}
+		strcpy(candidate[j].id, candi[j].id);
+		//candi[j].sum_rate = fabs((double)dsize.__pos/(double)tsize.__pos);
+		//method4:　method3に自己圧縮率を使わない
+		candidate[j].sum_rate += (double) dsize.__pos / (double) tsize.__pos;
+		candidate[j].rate = candidate[j].sum_rate;
+		//for(j=0; j<d; j++){
+		//printf("%s %f %d\n",candidate[j].id,candidate[j].rate,candidate[j].flag);
+		//}
+		qsort(candidate, d, sizeof(struct dict), listComp);
+		//puts("sorted!!!!!!!!!!!!!!!!!!!!!!");
+		//for(j=0; j<d; j++){
+		//		printf("%s %f %d\n",candidate[j].id,candidate[j].rate,candidate[j].flag);
+		//}
+	}
+
+	while (i < num_basis) {
+		for (j = 0; j < d; j++) {
+			if (candidate[j].flag == 0) {
+				memset(dicname, 0, sizeof(dicname));
+				sprintf(dicname, LBP_DICT_DIC"/%s.dic", candidate[j].id);
+				if ((fp = fopen(dicname, "rb")) == NULL) {
+					printf("file name miss\n");
+					exit(1);
+				}
+				//printf("d = %d\n",j);
+				candidate[j].flag = 1;
+				k = j;
+				break;
+			}
+		}
+		//printf("%d %s selected.\n",i,candidate[k].id);
+		strcpy(sel_dict[i].id, candidate[k].id);
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candidate[k].id);
+
+		if ((fp = fopen(dicname, "wb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+			put_bits(fp, dics[i][j].brother, DICW_SIZE);
+			put_bits(fp, dics[i][j].child, DICW_SIZE);
+			put_bits(fp, dics[i][j].parent, DICW_SIZE);
+			put_bits(fp, dics[i][j].flag, DICW_SIZE);
+			put_bits(fp, dics[i][j].depth, DICW_SIZE);
+		}
+		fclose(fp);
+
+		for (j = 0; j < d; j++) {
+			memset(textname, 0, sizeof(textname));
+			sprintf(textname, LBP_DICT_TXT"/%s.txt", candi[j].id);
+			fp = fopen(textname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &tsize);
+			fclose(fp);
+			memset(dicname, 0, sizeof(dicname));
+			sprintf(dicname, DICT_IMG"/%d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[i]);
+			finalize_file();
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error");
+			}
+			//method4:　method3に自己圧縮率を使わない
+			if (m.criteria == 1) {
+				candidate[j].sum_rate += (double) dsize.__pos
+						/ (double) tsize.__pos;
+				candidate[j].rate = candidate[j].sum_rate;
+			} else if (m.criteria == 2) {
+				dic_list[j][i].rate = (double) dsize.__pos
+						/ (double) tsize.__pos;
+				for (k = 0; k < num_basis; k++) {
+					temp_list[k].rate = dic_list[j][k].rate;
+					if (k == 0) {
+						min = temp_list[k].rate;
+					} else {
+						if (min > temp_list[k].rate)
+							min = temp_list[k].rate;
+					}
+				}
+				candidate[j].rate = min;
+			}
+
+			//		printf("candidate[%d].rate = %f\n",j,candidate[j].rate);
+		}
+		qsort(candidate, d, sizeof(struct dict), listComp);
+		i++;
+	}
+
+	int count;
+
+	for (i = 1; i < num_basis; i++) {
+		for (k = 0; k < i; k++) {
+			count = count_phrase(dics[i], dics[k]);
+			//	printf("match dic[%d],dic[%d] : %d\n",i,k,count+256);
+		}
+	}
+
+	for (i = 0; i < num_basis; i++) {
+		count = count_phrase(dics[i], dics[i]);
+		//printf("match dic[%d],dic[%d] : %d\n",i,i,count+256);
+		//printf("-------dic%d phrase-------\n",i);
+		//output_phrase(dics[i]);
+	}
+
+	if (m.del_dic == 1) {
+		for (i = 1; i < num_basis; i++) {
+			dics[i]->pre_phrase_num = count_phrase(dics[i], dics[i]);
+			for (k = 0; k < i; k++) {
+				//	printf("dic[%d], dic[%d]",k,i);
+				delete_cophrase(dics[k], dics[i]);
+			}
+//			printf("dic[%d]: ",i);
+			if (m.add == 1) {
+				compensate_phrase(dics[i]);
+				revise_flag(dics[i]);
+			}
+		}
+	}
+
+//
+	for (i = 1; i < num_basis; i++) {
+		for (k = 0; k < i; k++) {
+			count = count_phrase(dics[i], dics[k]);
+//				printf("match dic[%d],dic[%d] : %d\n",i,k,count);
+		}
+	}
+//
+	for (i = 0; i < num_basis; i++) {
+		count = count_phrase(dics[i], dics[i]);
+//		printf("match dic[%d],dic[%d] : %d\n",i,i,count+256);
+	}
+
+//	if(m.del_dic == 1){
+//		for(i=1; i<num_basis; i++){
+//			for(k=0; k<i; k++){
+//				delete_cophrase(dics[k],dics[i]);
+//			}
+//		}
+//	}
+//
+//	for(i=0; i<num_basis; i++){
+//		count = count_phrase(dics[i],dics[i]);
+//		printf("match dic[%d],dic[%d] : %d\n",i,i,count+256);
+//	}
+
+	if (m.del_dic == 1) {
+		puts("deleted!!!");
+		//system("rm "SEL_DIC"/*");
+		//#ifdef CCC
+		for (i = 0; i < num_basis; i++) {
+			memset(dicname, 0, sizeof(dicname));
+			//printf(SEL_DIC"/%s.dic\n",sel_dict[i].id);
+
+			sprintf(dicname, LBP_SEL_DIC"/%s.dic", sel_dict[i].id);
+
+			if ((fp = fopen(dicname, "wb")) == NULL) {
+				printf("file name miss\n");
+				exit(1);
+			}
+
+			for (j = 0; j < MAX_PHRASE_NUM; j++) {
+				put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+				put_bits(fp, dics[i][j].brother, DICW_SIZE);
+				put_bits(fp, dics[i][j].child, DICW_SIZE);
+				put_bits(fp, dics[i][j].parent, DICW_SIZE);
+				put_bits(fp, dics[i][j].flag, DICW_SIZE);
+				put_bits(fp, dics[i][j].depth, DICW_SIZE);
+			}
+
+			fclose(fp);
+
+			//		printf("candidate[%d].rate = %f\n",j,candidate[j].rate);
+		}
+	}
+
+//#endif
+
+	free(first);
+	free(candidate);
+	free(temp_list);
+	dics = finalize_dics(dics, num_basis);
+	free(dics);
+}
+
+/****************************************************************************
+ * 関数名 : SelectBaseline
+ * 作成日 :
+ * 作成者 : Nakajima.Y
+ * 更新日 :
+ * 機能   : 候補の中から基底辞書を選ぶ
+ * 引数   :
+ * 戻り値 : なし
+ ****************************************************************************/
+void SelectBaseline(int d, dict * candi, int num_basis, mode m,
+		dict *sel_dict) {
+
+	int rnd;
+	char select_dic[128];
+	char textname[128];
+	char dicname[128];
+	lzw_node** dics;
+	fpos_t tsize, dsize;
+	FILE *fp;
+	int i, j;
+	struct dict *select_dict;
+	int *selected_table;
+	bool flag;
+
+	select_dict = (struct dict *) malloc(sizeof(struct dict) * d);
+	for (j = 0; j < d; j++) {
+		select_dict[j].flag = 0;
+	}
+	selected_table = (int *) malloc(sizeof(int) * num_basis);
+	dics = initialize_dics(num_basis, MAX_PHRASE_NUM);
+
+	//1.ランダムに辞書を選択、辞書を読み込む、ファイルに書き出す
+	puts("----------Select with random.-----------");
+
+	for (i = 0; i < num_basis; i++) {
+		if (i == 0) {
+			rnd = rand() % d;
+			selected_table[0] = rnd;
+		} else {
+			do {
+				flag = 0;
+				rnd = rand() % d;
+				for (j = 0; j < i; j++) {
+					if (rnd == selected_table[j]) {
+						flag = 1;
+						break;
+					}
+				}
+				if (flag == 0) {
+					selected_table[i] = rnd;
+				}
+			} while (flag == 1);
+		}
+		sprintf(select_dic, DICT_DIC"/%s.dic", candi[rnd].id);
+		//strcpy(select_dic,candi[rnd].dic_id);
+		//printf("%s\n",select_dic);
+		if ((fp = fopen(select_dic, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+		//基底辞書書き出し
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, SEL_DIC"/%s.dic", candi[rnd].id);
+		if ((fp = fopen(dicname, "wb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+			put_bits(fp, dics[i][j].brother, DICW_SIZE);
+			put_bits(fp, dics[i][j].child, DICW_SIZE);
+			put_bits(fp, dics[i][j].parent, DICW_SIZE);
+			put_bits(fp, dics[i][j].flag, DICW_SIZE);
+			put_bits(fp, dics[i][j].depth, DICW_SIZE);
+		}
+		fclose(fp);
+	}
+
+	double rate;
+	point *data;
+	classify *cl;
+	patch_graph *pgr;
+
+	pgr = (patch_graph *) malloc(sizeof(patch_graph) * d);
+
+	//2.候補となる画像集合を特徴量へ変換
+	for (i = 0; i < d; i++) {
+		pgr[i].cv_num = (double *) malloc(sizeof(double) * num_basis);
+		memset(textname, 0, sizeof(textname));
+		sprintf(textname, DICT_TXT"/%s.txt", candi[i].id);
+		strcpy(pgr[i].id, candi[i].id);
+		fp = fopen(textname, "rb");
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		for (j = 0; j < num_basis; j++) {
+			memset(dicname, 0, sizeof(dicname));
+			sprintf(dicname, TEST_IMG"/%d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[j]); /* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			//printf("%s : %f\n",dicname,(double)tsize.__pos);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			rate = (double) dsize.__pos / (double) tsize.__pos;
+			pgr[i].cv_num[j] = rate;
+		}
+	}
+
+	//3.特徴量をk-meansクラスタリング
+	data = (point *) malloc(sizeof(point) * d);
+
+	for (i = 0; i < d; i++) {
+		data[i].cvector = (double *) malloc(sizeof(double) * num_basis);
+		data[i].distance = DBL_MAX;/*最大値で初期化*/
+		data[i].text_num = i;
+		data[i].hrg = 1;
+		data[i].nod = 0;
+		strcpy(data[i].id, pgr[i].id);
+		for (j = 0; j < num_basis; j++) {
+			data[i].cvector[j] = pgr[i].cv_num[j];
+			//printf("%f\n",data[i].cvector[j]);
+		}
+	}
+
+	cl = (classify *) malloc(sizeof(classify) * num_basis);
+	for (i = 0; i < num_basis; i++) {
+		cl[i].coodinate = (double *) malloc(sizeof(double) * num_basis);
+		cl[i].mindis = DBL_MAX;
+	}
+
+	k_means(data, cl, num_basis, num_basis, d, m);
+
+	for (i = 0; i < d; i++) {
+		//printf("%s \t %f \n",data[i].id,data[i].distance);
+		if (data[i].distance < cl[data[i].clnum].mindis) {
+			cl[data[i].clnum].mindis = data[i].distance;
+			cl[data[i].clnum].mindisdata = data[i].text_num;
+			strcpy(cl[data[i].clnum].id, data[i].id);
+		}
+	}
+
+	for (i = 0; i < num_basis; i++) {
+		if (cl[i].cnum == 0) {
+			cl[i].mindisdata = 0;
+		}
+		//printf("%f %s\n",cl[i].mindis,cl[i].id);
+	}
+
+	//4.クラスタ中心のデータを基底辞書として書き出す
+	puts("----Output Centered Dictionary.---------");
+
+	system("rm "SEL_DIC"/*");
+
+	free(dics);
+	dics = initialize_dics(num_basis, MAX_PHRASE_NUM);
+
+	for (i = 0; i < num_basis; i++) {
+
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, DICT_DIC"/%s.dic", cl[i].id);
+		//printf("%d : %s\n",i,cl[i].id);
+		strcpy(sel_dict[i].id, cl[i].id);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, SEL_DIC"/%s.dic", cl[i].id);
+		if ((fp = fopen(dicname, "wb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+			put_bits(fp, dics[i][j].brother, DICW_SIZE);
+			put_bits(fp, dics[i][j].child, DICW_SIZE);
+			put_bits(fp, dics[i][j].parent, DICW_SIZE);
+			put_bits(fp, dics[i][j].flag, DICW_SIZE);
+			put_bits(fp, dics[i][j].depth, DICW_SIZE);
+		}
+		fclose(fp);
+
+	}
+
+	if (m.del_dic == 1) {
+		puts("deleted!!!");
+		//system("rm "SEL_DIC"/*");
+		//#ifdef CCC
+		for (i = 0; i < num_basis; i++) {
+			memset(dicname, 0, sizeof(dicname));
+			//printf(SEL_DIC"/%s.dic\n",sel_dict[i].id);
+
+			sprintf(dicname, SEL_DIC"/%s.dic", sel_dict[i].id);
+
+			if ((fp = fopen(dicname, "wb")) == NULL) {
+				printf("file name miss\n");
+				exit(1);
+			}
+
+			for (j = 0; j < MAX_PHRASE_NUM; j++) {
+				put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+				put_bits(fp, dics[i][j].brother, DICW_SIZE);
+				put_bits(fp, dics[i][j].child, DICW_SIZE);
+				put_bits(fp, dics[i][j].parent, DICW_SIZE);
+				put_bits(fp, dics[i][j].flag, DICW_SIZE);
+				put_bits(fp, dics[i][j].depth, DICW_SIZE);
+			}
+
+			fclose(fp);
+
+			//		printf("candidate[%d].rate = %f\n",j,candidate[j].rate);
+		}
+	}
+
+	free(select_dict);
+	free(selected_table);
+	free(pgr);
+
+#ifdef RRR
+#endif
+
+}
+
+/****************************************************************************
+ * 関数名 : LbpSelectBaseline
+ * 作成日 :
+ * 作成者 : Nakajima.Y
+ * 更新日 :
+ * 機能   : 候補の中から基底辞書を選ぶ
+ * 引数   :
+ * 戻り値 : なし
+ ****************************************************************************/
+void LbpSelectBaseline(int d, dict * candi, int num_basis, mode m,
+		dict *sel_dict) {
+
+	int rnd;
+	char select_dic[128];
+	char textname[128];
+	char dicname[128];
+	lzw_node** dics;
+	fpos_t tsize, dsize;
+	FILE *fp;
+	int i, j, k;
+	struct dict *select_dict;
+	int *selected_table;
+	bool flag;
+
+	select_dict = (struct dict *) malloc(sizeof(struct dict) * d);
+	for (j = 0; j < d; j++) {
+		select_dict[j].flag = 0;
+	}
+	selected_table = (int *) malloc(sizeof(int) * num_basis);
+	dics = initialize_dics(num_basis, MAX_PHRASE_NUM);
+
+	//1.ランダムに辞書を選択、辞書を読み込む、ファイルに書き出す
+	puts("----------Select with random.-----------");
+
+	for (i = 0; i < num_basis; i++) {
+		if (i == 0) {
+			rnd = rand() % d;
+			selected_table[0] = rnd;
+		} else {
+			do {
+				flag = 0;
+				rnd = rand() % d;
+				for (j = 0; j < i; j++) {
+					if (rnd == selected_table[j]) {
+						flag = 1;
+						break;
+					}
+				}
+				if (flag == 0) {
+					selected_table[i] = rnd;
+				}
+			} while (flag == 1);
+		}
+		sprintf(select_dic, LBP_DICT_DIC"/%s.dic", candi[rnd].id);
+		//strcpy(select_dic,candi[rnd].dic_id);
+		//printf("%s\n",select_dic);
+		if ((fp = fopen(select_dic, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+		//基底辞書書き出し
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candi[rnd].id);
+		if ((fp = fopen(dicname, "wb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+			put_bits(fp, dics[i][j].brother, DICW_SIZE);
+			put_bits(fp, dics[i][j].child, DICW_SIZE);
+			put_bits(fp, dics[i][j].parent, DICW_SIZE);
+			put_bits(fp, dics[i][j].flag, DICW_SIZE);
+			put_bits(fp, dics[i][j].depth, DICW_SIZE);
+		}
+		fclose(fp);
+	}
+
+	double rate;
+	point *data;
+	classify *cl;
+	patch_graph *pgr;
+
+	pgr = (patch_graph *) malloc(sizeof(patch_graph) * d);
+
+	//2.候補となる画像集合を特徴量へ変換
+	puts("Convert.");
+	for (k = 0; k < d; k++) {
+//	printf("---i=%d---\n",k);
+		pgr[k].cv_num = (double *) malloc(sizeof(double) * num_basis);
+		memset(textname, 0, sizeof(textname));
+		sprintf(textname, LBP_DICT_TXT"/%s.txt", candi[k].id);
+		strcpy(pgr[k].id, candi[k].id);
+		fp = fopen(textname, "rb");
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		for (j = 0; j < num_basis; j++) {
+			memset(dicname, 0, sizeof(dicname));
+			sprintf(dicname, TEST_IMG"/%d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[j]); /* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			//printf("%s : %f\n",dicname,(double)tsize.__pos);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			rate = (double) dsize.__pos / (double) tsize.__pos;
+			pgr[k].cv_num[j] = rate;
+//		printf("---i=%d---\n",k);
+		}
+//	printf("---i=%d---\n",k);
+	}
+
+	//3.特徴量をk-meansクラスタリング
+	puts("Clustering.");
+	data = (point *) malloc(sizeof(point) * d);
+
+	for (i = 0; i < d; i++) {
+		data[i].cvector = (double *) malloc(sizeof(double) * num_basis);
+		data[i].distance = DBL_MAX;/*最大値で初期化*/
+		data[i].text_num = i;
+		data[i].hrg = 1;
+		data[i].nod = 0;
+		strcpy(data[i].id, pgr[i].id);
+		for (j = 0; j < num_basis; j++) {
+			data[i].cvector[j] = pgr[i].cv_num[j];
+			//printf("%f\n",data[i].cvector[j]);
+		}
+	}
+
+	cl = (classify *) malloc(sizeof(classify) * num_basis);
+	for (i = 0; i < num_basis; i++) {
+		cl[i].coodinate = (double *) malloc(sizeof(double) * num_basis);
+		cl[i].mindis = DBL_MAX;
+	}
+
+	k_means(data, cl, num_basis, num_basis, d, m);
+
+	for (i = 0; i < d; i++) {
+		//printf("%s \t %f \n",data[i].id,data[i].distance);
+		if (data[i].distance < cl[data[i].clnum].mindis) {
+			cl[data[i].clnum].mindis = data[i].distance;
+			cl[data[i].clnum].mindisdata = data[i].text_num;
+			strcpy(cl[data[i].clnum].id, data[i].id);
+		}
+	}
+
+	for (i = 0; i < num_basis; i++) {
+		if (cl[i].cnum == 0) {
+			cl[i].mindisdata = 0;
+		}
+		//printf("%f %s\n",cl[i].mindis,cl[i].id);
+	}
+
+	//4.クラスタ中心のデータを基底辞書として書き出す
+	puts("----Output Centered Dictionary.---------");
+
+	system("rm "LBP_SEL_DIC"/*");
+
+	free(dics);
+	dics = initialize_dics(num_basis, MAX_PHRASE_NUM);
+
+	for (i = 0; i < num_basis; i++) {
+
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, LBP_DICT_DIC"/%s.dic", cl[i].id);
+		//printf("%d : %s\n",i,cl[i].id);
+		strcpy(sel_dict[i].id, cl[i].id);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", cl[i].id);
+		if ((fp = fopen(dicname, "wb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+			put_bits(fp, dics[i][j].brother, DICW_SIZE);
+			put_bits(fp, dics[i][j].child, DICW_SIZE);
+			put_bits(fp, dics[i][j].parent, DICW_SIZE);
+			put_bits(fp, dics[i][j].flag, DICW_SIZE);
+			put_bits(fp, dics[i][j].depth, DICW_SIZE);
+		}
+		fclose(fp);
+
+	}
+
+	if (m.del_dic == 1) {
+		puts("deleted!!!");
+		//system("rm "SEL_DIC"/*");
+		//#ifdef CCC
+		for (i = 0; i < num_basis; i++) {
+			memset(dicname, 0, sizeof(dicname));
+			//printf(SEL_DIC"/%s.dic\n",sel_dict[i].id);
+
+			sprintf(dicname, LBP_SEL_DIC"/%s.dic", sel_dict[i].id);
+
+			if ((fp = fopen(dicname, "wb")) == NULL) {
+				printf("file name miss\n");
+				exit(1);
+			}
+
+			for (j = 0; j < MAX_PHRASE_NUM; j++) {
+				put_bits(fp, dics[i][j].alphabet, DICW_SIZE);
+				put_bits(fp, dics[i][j].brother, DICW_SIZE);
+				put_bits(fp, dics[i][j].child, DICW_SIZE);
+				put_bits(fp, dics[i][j].parent, DICW_SIZE);
+				put_bits(fp, dics[i][j].flag, DICW_SIZE);
+				put_bits(fp, dics[i][j].depth, DICW_SIZE);
+			}
+
+			fclose(fp);
+
+			//		printf("candidate[%d].rate = %f\n",j,candidate[j].rate);
+		}
+	}
+
+	free(select_dict);
+	free(selected_table);
+	free(pgr);
+
+#ifdef RRR
+#endif
+
+}
+
+/****************************************************************************
+ * 関数名 : str_eraser
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : 文字列s1に含まれる文字列s2を削除する
+ * 引数   : 比較対象1:_a, 比較対象2:_b
+ * 戻り値 : 1 or -1 or 0
+ ****************************************************************************/
+void str_eraser(char *s1, char *s2) {
+	char *p = s1;
+
+	p = strstr(s1, s2);
+	if (p != NULL) {
+		strcpy(p, p + strlen(s2));
+		str_eraser(p + 1, s2);
+	}
+}
+
+/****************************************************************************
+ * 関数名 : listComp
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : qsort()でdouble型の要素を比較する関数（降順）
+ * 引数   : 比較対象1:_a, 比較対象2:_b
+ * 戻り値 : 1 or -1 or 0
+ ****************************************************************************/
+int listComp(const void* a, const void* b) {
+
+	const struct dict* x = (const struct dict*) a;
+	const struct dict* y = (const struct dict*) b;
+
+	if (x->rate < y->rate)
+		return 1;
+	if (x->rate > y->rate)
+		return -1;
+	return 0;
+}
+
+/****************************************************************************
+ * 関数名 : listComp_asc
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : qsort()でdouble型の要素を比較する関数（昇順）
+ * 引数   : 比較対象1:_a, 比較対象2:_b
+ * 戻り値 : 1 or -1 or 0
+ ****************************************************************************/
+int listComp_asc(const void* a, const void* b) {
+
+	const struct dict* x = (const struct dict*) a;
+	const struct dict* y = (const struct dict*) b;
+
+	if (x->rate > y->rate)
+		return 1;
+	if (x->rate < y->rate)
+		return -1;
+	return 0;
+}
+
+/****************************************************************************
+ * 関数名 : listComp2
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : knnで距離をソートするために用いる
+ * 引数   : 比較対象1:_a, 比較対象2:_b
+ * 戻り値 : 1 or -1 or 0
+ ****************************************************************************/
+int listComp2(const void* a, const void* b) {
+
+	const struct knn_temp* x = (const struct knn_temp*) a;
+	const struct knn_temp* y = (const struct knn_temp*) b;
+
+	if (x->dis > y->dis)
+		return 1;
+	if (x->dis < y->dis)
+		return -1;
+	return 0;
+}
+
+/****************************************************************************
+ * 関数名 : listComp3
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : qsort()でdouble型の要素を比較する関数（降順）
+ * 引数   : 比較対象1:_a, 比較対象2:_b
+ * 戻り値 : 1 or -1 or 0
+ ****************************************************************************/
+int listComp3(const void* a, const void* b) {
+
+	const struct dict* x = (const struct dict*) a;
+	const struct dict* y = (const struct dict*) b;
+
+	if (x->self_rate < y->self_rate)
+		return 1;
+	if (x->self_rate > y->self_rate)
+		return -1;
+	return 0;
+}
+
+/****************************************************************************
+ * 関数名 : Labeling
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : 画像を読み込んで、ファイル名に基づいてラベルをつける。
+ * 引数   :
+ * 戻り値 :
+ ****************************************************************************/
+void Labeling(int e, dict* exmpl) {
+
+	int i;
+
+	for (i = 0; i < e; i++) {
+		//Labeling...
+		if (strstr(exmpl[i].id, "forest") != NULL) {
+			strcpy(exmpl[i].class_name, "forest");
+			exmpl[i].class_id = 0;
+		} else if (strstr(exmpl[i].id, "river") != NULL) {
+			strcpy(exmpl[i].class_name, "river");
+			exmpl[i].class_id = 1;
+		} else if (strstr(exmpl[i].id, "intersection") != NULL) {
+			strcpy(exmpl[i].class_name, "intersection");
+			exmpl[i].class_id = 2;
+		} else if (strstr(exmpl[i].id, "denseresidential") != NULL) {
+			strcpy(exmpl[i].class_name, "denseresidential");
+			exmpl[i].class_id = 3;
+		} else if (strstr(exmpl[i].id, "buildings") != NULL) {
+			strcpy(exmpl[i].class_name, "buildings");
+			exmpl[i].class_id = 4;
+		}
+		//printf("%s is %s(class_id = %d).\n",exmpl[i].id,exmpl[i].class_name,exmpl[i].class_id);
+	}
+
+}
+
+/****************************************************************************
+ * 関数名 : Extract_Exmpl
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : サンプル画像をテキストに変換。
+ * 引数   :
+ * 戻り値 :
+ ****************************************************************************/
+void ExtractExmpl(mode m, int e, dict *exmpl) {
+	int i;
+	IplImage* simage;
+	char imgname[128];
+	char textname[128];
+
+	DIR *dir;
+	struct dirent *dp;
+	dir = opendir(EXMPL_IMG);
+	char split[] = ".tif";
+
+	i = 0;
+
+	for (dp = readdir(dir); dp != NULL; dp = readdir(dir)) {
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			sprintf(exmpl[i].id, "%s", dp->d_name);
+			str_eraser(exmpl[i].id, split);
+			sprintf(imgname, EXMPL_IMG"/%s.tif", exmpl[i].id);
+			sprintf(textname, EXMPL_TXT"/%s.txt", exmpl[i].id);
+			if (m.text_cnvrt == 1) {
+				simage = cvLoadImage(imgname,
+						CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+				if (!simage) {
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				cvCvtColor(simage, simage, CV_BGR2Lab);
+				if (!simage) {
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				printf("%s -> %s\n", exmpl[i].id, textname);
+				if (m.convert == 0) {
+					image2text_mst(simage, textname, m);
+				} else if (m.convert == 1) {
+					image2text_horizon(simage, textname, m);
+				}
+			}
+		}
+		i++;
+	}
+
+	puts("bbb");
+
+	closedir(dir);
+
+	dir = opendir(LBP_CAND);
+
+	puts("bbb");
+
+	do {
+
+		dp = readdir(dir);
+
+		if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0) {
+			continue;
+		} else {
+			printf("i = %d\n", i);
+			sprintf(exmpl[i].id, "%s", dp->d_name);
+			str_eraser(exmpl[i].id, split);
+			sprintf(imgname, LBP_CAND"/%s.tif", exmpl[i].id);
+			sprintf(textname, LBP_EXMPL_TXT"/%s.txt", exmpl[i].id);
+			if (m.text_cnvrt == 1) {
+				simage = cvLoadImage(imgname,
+						CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+				if (!simage) {
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				if (!simage) {
+					printf("error: no image file[%s]\n", imgname);
+					exit(1);
+				}
+				//printf("%s -> %s\n",exmpl[i].id,textname);
+				image2text_lbp(simage, textname, m);
+			}
+			printf("i = %d\n", i);
+		}
+		printf("i = %d\n", i);
+		i++;
+		printf("i = %d\n", i);
+
+	} while (dp == NULL);
+
+//	for(dp=readdir(dir);dp!=NULL;dp=readdir(dir)){
+//		printf("i = %d\n",i);
+//	    if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+//	    	continue;
+//	    }else{
+//	    	printf("i = %d\n",i);
+//	    	sprintf(exmpl[i].id,"%s",dp->d_name);
+//	    	str_eraser(exmpl[i].id,split);
+//	    	sprintf(imgname,LBP_CAND"/%s.tif",exmpl[i].id);
+//	    	sprintf(textname,LBP_EXMPL_TXT"/%s.txt",exmpl[i].id);
+//	    	if(m.text_cnvrt == 1){
+//	    		simage = cvLoadImage(imgname,CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+//	    		if(!simage){
+//	    			printf("error: no image file[%s]\n",imgname);
+//	    			exit(1);
+//	    		}
+//	    		if(!simage){
+//	    			printf("error: no image file[%s]\n",imgname);
+//	    			exit(1);
+//	    		}
+//	    		//printf("%s -> %s\n",exmpl[i].id,textname);
+//	    		image2text_lbp(simage,textname,m);
+//	    	}
+//	    	printf("i = %d\n",i);
+//	    }
+//	    printf("i = %d\n",i);
+//	    i++;
+//	    printf("i = %d\n",i);
+//	}
+
+	puts("bbb");
+
+	closedir(dir);
+
+}
+
+/****************************************************************************
+ * 関数名 : Compress_Exmpl
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   : サンプルデータを圧縮特徴量に変換。
+ * 引数   :
+ * 戻り値 :
+ ****************************************************************************/
+void CompressExmpl(mode m, int d, dict *exmpl, dict *candi, dict *lbp_candi,
+		int e, patch_graph *exmpl_pgr) {
+
+	char textname[128];
+	char dicname[128];
+	lzw_node** dics;
+	FILE *fp;
+	int i, j;
+	fpos_t tsize, dsize;
+	double rate;
+
+	puts("aaa");
+
+	dics = initialize_dics(d * 2, MAX_PHRASE_NUM);
+
+	puts("aaa");
+
+	if (m.convert == 0) {
+		Leveler(exmpl_pgr, d * 2, e, e);
+	}
+
+	puts("aaa");
+
+	//基底辞書の読み込み
+	for (i = 0; i < d; i++) {
+		memset(dicname, 0, sizeof(dicname));
+		if (m.select == 0) {
+			sprintf(dicname, DICT_DIC"/%s.dic", candi[i].id);
+		} else if (m.select == 1 || m.select == 2) {
+			sprintf(dicname, SEL_DIC"/%s.dic", candi[i].id);
+		}
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+	}
+
+	for (i = 0; i < d; i++) {
+		memset(dicname, 0, sizeof(dicname));
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", lbp_candi[i].id);
+		printf("%s \n", dicname);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i + d][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].child = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+	}
+
+	for (i = 0; i < e; i++) {
+		exmpl_pgr[i].cv_num = (double *) malloc(sizeof(double) * d * 2);
+		memset(textname, 0, sizeof(textname));
+		sprintf(textname, EXMPL_TXT"/%s.txt", exmpl[i].id);
+		memset(exmpl_pgr[i].id, 0, sizeof(exmpl_pgr[i].id));
+		strcpy(exmpl_pgr[i].id, exmpl[i].id);
+		/* textファイルのサイズ取得 */
+		if ((fp = fopen(textname, "rb")) == NULL) {
+			puts("error!");
+			exit(1);
+		}
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		//printf("%s\n",textname);
+		for (j = 0; j < d; j++) {
+
+			memset(dicname, 0, sizeof(dicname));
+			sprintf(dicname, CNVRTED"/img%d-dic%02d.dic", i + 1, j + 1); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[j]); /* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+
+//#ifdef XX
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			//printf("%s : %f\n",dicname,(double)tsize.__pos);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			rate = (double) dsize.__pos / (double) tsize.__pos;
+			//printf("%f\n",rate);
+			exmpl_pgr[i].cv_num[j] = rate;
+			//printf("%f\n",exmpl_pgr[i].cv_num[j]);
+//#endif
+		}
+		sprintf(textname, LBP_EXMPL_TXT"/%s.txt", exmpl[i].id);
+		//strcpy(pgr[i].id, test[i].id);
+		/* textファイルのサイズ取得 */
+
+		if ((fp = fopen(textname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		//printf("%s\n",textname);
+		for (j = d; j < d * 2; j++) {
+			sprintf(dicname, TEST_IMG"/%02d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[j]); /* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			//printf("%s : %f\n",dicname,(double)tsize.__pos);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			rate = (double) dsize.__pos / (double) tsize.__pos;
+			//printf("%f\n",rate);
+			exmpl_pgr[i].cv_num[j] = rate;
+		}
+
+	}
+
+	char filename[] = "example";
+
+	Out_Features(exmpl_pgr, e, d, candi, lbp_candi, filename);
+
+}
+
+/****************************************************************************
+ * 関数名 : K-NNSearch
+ * 作成日 :
+ * 作成者 : Y.Nakajima
+ * 更新日 :
+ * 機能   :
+ * 引数   :
+ * 戻り値 : なし
+ ****************************************************************************/
+float KnnSearch(int n, mode m, int d, patch_graph *pgr, patch_graph *exmpl_pgr,
+		int k, point *dic, dict *candi, dict *candi_lbp, dict *test,
+		dict *exmpl, int e, knn_result *result, int num_basis) {
+
+	int i, j, l;
+	double rate;
+	char dicname[128];
+	char textname[128];
+	char outname[128];
+	fpos_t tsize, dsize;
+	FILE* fp, *out_file;
+	point *data;
+	classify *cl;
+	lzw_node** dics;
+	knn_temp* temp;
+
+	Leveler(pgr, d * 2, n, n);
+	dics = initialize_dics(d * 2, MAX_PHRASE_NUM);
+
+	time_t sec;
+	char *str;
+	time(&sec);
+	str = ctime(&sec);
+	//printf( "%s", str );
+
+	if (m.select == 0) {
+		sprintf(outname, OUTPUT"/dump/static-%s.dat", str);
+	} else if (m.select == 1) {
+		sprintf(outname, OUTPUT"/dump/criteria-%s.dat", str);
+	} else if (m.select == 2) {
+		sprintf(outname, OUTPUT"/dump/centroid-%s.dat", str);
+	}
+	if ((out_file = fopen(outname, "a+")) == NULL) {
+		printf("file name miss\n");
+		exit(1);
+	}
+
+	//1.テストデータを特徴量変換
+	for (i = 0; i < d; i++) {
+		if (m.select == 0) {
+			sprintf(dicname, DICT_DIC"/%s.dic", candi[i].id);
+		} else if (m.select == 1 || m.select == 2) {
+			sprintf(dicname, SEL_DIC"/%s.dic", candi[i].id);
+		}
+		strcpy(dic[i].id, candi[i].id);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		//printf("%s\n",dicname);
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i][j].child = get_bits(fp, DICW_SIZE);
+			dics[i][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+	}
+	for (i = 0; i < d; i++) {
+		sprintf(dicname, LBP_SEL_DIC"/%s.dic", candi_lbp[i].id);
+		strcpy(dic[i + d].id, candi_lbp[i].id);
+		if ((fp = fopen(dicname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		printf("%s\n", dicname);
+		for (j = 0; j < MAX_PHRASE_NUM; j++) {
+			dics[i + d][j].alphabet = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].brother = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].child = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].parent = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].flag = get_bits(fp, DICW_SIZE);
+			dics[i + d][j].depth = get_bits(fp, DICW_SIZE);
+		}
+		fclose(fp);
+	}
+
+	for (i = 0; i < n; i++) {
+		sprintf(textname, TEST_TXT"/%s.txt", test[i].id);
+		strcpy(pgr[i].id, test[i].id);
+		/* textファイルのサイズ取得 */
+
+		if ((fp = fopen(textname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		//printf("%s\n",textname);
+		for (j = 0; j < d; j++) {
+			sprintf(dicname, TEST_IMG"/%02d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[j]); /* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			//printf("%s : %f\n",dicname,(double)tsize.__pos);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			rate = (double) dsize.__pos / (double) tsize.__pos;
+			//printf("%f\n",rate);
+			pgr[i].cv_num[j] = rate;
+			//printf("%f\n",pgr[i].cv_num[j]);
+		}
+		sprintf(textname, LBP_TEST_TXT"/%s.txt", test[i].id);
+		//strcpy(pgr[i].id, test[i].id);
+		/* textファイルのサイズ取得 */
+
+		if ((fp = fopen(textname, "rb")) == NULL) {
+			printf("file name miss\n");
+			exit(1);
+		}
+		fseek(fp, 0, SEEK_END);
+		fgetpos(fp, &tsize);
+		fclose(fp);
+		//printf("%s\n",textname);
+		for (j = d; j < d * 2; j++) {
+			sprintf(dicname, TEST_IMG"/%02d.dic", j); //書き出さない
+			initialize_file(textname, dicname);
+			initilalize_work();
+			encode_fix2(dics[j]); /* フラグ有の圧縮 */
+			finalize_file();
+			/* 圧縮後のサイズ取得 */
+			fp = fopen(dicname, "rb");
+			fseek(fp, 0, SEEK_END);
+			fgetpos(fp, &dsize);
+			//printf("%s : %f\n",dicname,(double)tsize.__pos);
+			fclose(fp);
+			if (remove(dicname) != 0) {
+				printf("error\n");
+			}
+			rate = (double) dsize.__pos / (double) tsize.__pos;
+			//printf("%f\n",rate);
+			pgr[i].cv_num[j] = rate;
+		}
+	}
+
+	char filename[] = "test";
+	Out_Features(pgr, n, d, candi, candi_lbp, filename);
+
+	//2.距離計算
+	temp = (knn_temp *) malloc(sizeof(knn_temp) * e);
+
+	for (i = 0; i < n; i++) {
+		result[i].id = (int *) malloc(sizeof(int) * e);
+		result[i].dis = (double *) malloc(sizeof(double) * e);
+
+		for (j = 0; j < e; j++) {
+			temp[j].index = j;
+			temp[j].dis = calc_distance(pgr[i].cv_num, exmpl_pgr[j].cv_num,
+					d * 2);
+		}
+		qsort(temp, e, sizeof(struct knn_temp), listComp2);
+		for (j = 0; j < e; j++) {
+			result[i].id[j] = temp[j].index;
+			result[i].dis[j] = temp[j].dis;
+			//printf(" %d %f ",result[i].id[j],result[i].dis[j] );
+		}
+		//printf("\n");
+	}
+
+	int tempo[5];
+	int max;
+	int idx;
+	int max_index[5];
+	int conflict;
+
+	//3.判別（k近傍）
+	for (i = 0; i < n; i++) {
+		result[i].disc_id = (int) malloc(sizeof(int));
+		for (j = 0; j < 5; j++) {
+			tempo[j] = 0;
+			max_index[j] = -1;
+			conflict = 0;
+		}
+		for (j = 1; j < k; j++) {
+			tempo[exmpl[result[i].id[j]].class_id]++;
+		}
+		max = tempo[0];
+		idx = 0;
+		//max_index = 0;
+		for (j = 1; j < 5; j++) {
+			if (max < tempo[j]) {
+				max = tempo[j];
+				idx = j;
+			}
+		}
+		for (j = 0; j < 5; j++) {
+			if (max == tempo[j]) {
+				//		printf("tempo[%d] = %d \n",j,tempo[j]);
+				max_index[conflict] = j;
+				conflict++;
+			}
+		}
+
+		if (conflict - 1 != 0) {
+			//	printf("conflict!\n");
+			result[i].disc_id = max_index[rand() % conflict];
+		} else {
+			result[i].disc_id = idx;
+		}
+		//printf("result[i].disc_id = %d\n",result[i].disc_id);
+		//result[i].disc_id = max_index;
+		if (result[i].disc_id == 0) {
+			//	printf("%s is forest\n",test[i].id);
+			fprintf(out_file, "%s is forest\n", test[i].id);
+		} else if (result[i].disc_id == 1) {
+			//	printf("%s is river\n",test[i].id);
+			fprintf(out_file, "%s is river\n", test[i].id);
+		} else if (result[i].disc_id == 2) {
+			//	printf("%s is intersection\n",test[i].id);
+			fprintf(out_file, "%s is intersection\n", test[i].id);
+		} else if (result[i].disc_id == 3) {
+			//	printf("%s is denseresidential\n",test[i].id);
+			fprintf(out_file, "%s is denseresidential\n", test[i].id);
+		} else if (result[i].disc_id == 4) {
+			//	printf("%s is buildings\n",test[i].id);
+			fprintf(out_file, "%s is buildings\n", test[i].id);
+		}
+	}
+
+	//4.正答率計算
+
+	int correct = 0;
+	//平均正答率
+	for (i = 0; i < n; i++) {
+		if (result[i].disc_id == test[i].class_id) {
+			correct++;
+		}
+	}
+
+	//printf("ave. precision = %f\n",(double)correct/n);
+	printf("%f\n", (double) correct / n);
+	fprintf(out_file, "ave. precision = %f\n", (double) correct / n);
+
+	//クラスごとの正答率(5クラスver)
+	int correct_class[5];
+	memset(correct_class, 0, sizeof(correct_class));
+	for (i = 0; i < n; i++) {
+		for (j = 0; j < 5; j++) {
+			if (test[i].class_id == j) {
+				if (result[i].disc_id == test[i].class_id) {
+					correct_class[j]++;
+				}
+			}
+		}
+	}
+
+	char temp_str[5][20] = { "forest", "river", "intersection",
+			"denseresidential", "buildings" };
+	float** mean;
+	float within_var = 0, between_var = 0;
+	int num_class[5] = { 0, 0, 0, 0, 0 };
+	float* mean_all;
+
+	mean = (float **) malloc(sizeof(float) * 5);
+	mean_all = (float *) malloc(sizeof(float) * num_basis);
+
+	for (i = 0; i < 5; i++) {
+		mean[i] = (float *) malloc(sizeof(float) * num_basis);
+	}
+
+	for (i = 0; i < 5; i++) {
+		printf("class_id %d(%s) precision = %f \n", i, &temp_str[i][0],
+				(double) correct_class[i] / (n / 5));
+		fprintf(out_file, "class_id %d(%s) precision = %f \n", i,
+				&temp_str[i][0], (double) correct_class[i] / (n / 5));
+	}
+
+	//クラス内分散の算出
+	for (i = 0; i < n; i++) {
+		for (j = 0; j < 5; j++) {
+			if (j == exmpl[i].class_id) {
+				for (l = 0; l < num_basis; l++) {
+					mean[j][l] += exmpl_pgr[i].cv_num[l];
+				}
+				num_class[j]++;
+			}
+		}
+	}
+
+	for (j = 0; j < 5; j++) {
+		//printf("num_class[%d] = %d\n",j,num_class[j]);
+		for (l = 0; l < num_basis; l++) {
+			mean[j][l] = mean[j][l] / num_class[j];
+			//printf("mean[%d][%d] = %f\n",j,l,mean[j][l]);
+		}
+	}
+
+	for (i = 0; i < n; i++) {
+		for (l = 0; l < num_basis; l++) {
+			within_var += (exmpl_pgr[i].cv_num[l] - mean[exmpl[i].class_id][l])
+					* (exmpl_pgr[i].cv_num[l] - mean[exmpl[i].class_id][l]);
+		}
+	}
+
+	printf("class-within var = %f\n", within_var / n);
+	fprintf(out_file, "class-within var = %f\n", within_var / n);
+
+	//クラス間分散の算出
+	for (i = 0; i < n; i++) {
+		for (l = 0; l < num_basis; l++) {
+			mean_all[l] += exmpl_pgr[i].cv_num[l];
+		}
+	}
+
+	for (l = 0; l < num_basis; l++) {
+		mean_all[l] = mean_all[l] / n;
+	}
+
+	for (i = 0; i < 5; i++) {
+		for (l = 0; l < num_basis; l++) {
+			between_var += num_class[i] * (mean_all[l] - mean[i][l])
+					* (mean_all[l] - mean[i][l]);
+		}
+	}
+
+	printf("between var = %f\n", between_var / n);
+	fprintf(out_file, "between var = %f\n", between_var / n);
+
+	fclose(out_file);
+	free(temp);
+	free(mean_all);
+
+	return (double) correct / n;
+
+#ifdef knn
+#endif
+
+}
+
+/****************************************************************************
+ * 関数名 : main
+ * 作成日 :
+ * 作成者 : Yuji Nakajima
+ * 更新日 : 2015/02/06
+ * 機能   : main
+ * 引数   :
+ * 戻り値 : なし
+ ****************************************************************************/
+int main(int argc, char* argv[]) {
+	int i;
+	int k, d, n, e; /* クラスタ数 k, 辞書候補集合の大きさ d, テスト集合の大きさ n, 訓練集合の大きさ e */
+	int num_basis; /* 基底辞書の個数 */
+
+	filenn fnn;
+	patch_graph *pgr;
+	patch_graph *exmpl_pgr = NULL;
+	FILE *fp;
+	char buf[10];
+	point *dic;
+	dict *candi, *exmpl = NULL, *sel_dict, *test, *candi_lbp, *lbp_sel_dict,
+			*lbp_test;
+	knn_result *result;
+	char fname[128];
+
+	float ave_rate;
+	float retrn;
+
+	/* mode設定 */
+	mode m;
+	/*実験パラメータ*/
+	m.criteria = 2;		//非類似度 : 1==合計最大化、2==最小最大化
+	m.select = 1;		//辞書の選び方： 0==固定、1==類似度、2==kmeans
+	m.convert = 1;		//テキストへの変換方法： 0==MST、1==水平スキャン
+	m.knn = 1; 			//k-nn探索の有無
+	m.text_cnvrt = 0; 	//テキスト変換の有無
+	m.del_dic = 1; 		//辞書の単語削除の有無
+	m.add = 1; 			//削除後の単語追加の有無
+	m.first_select = 0; //最初の辞書の選択方法 0:ランダム、1:最大、2:中間、3:最小
+
+	k = 6;
+	num_basis = 5;
+
+	/* 乱数のシード */
+	int t;
+	t = 1;
+	//t = atoi(argv[1]);	//複数試行をおこなう実験の際に用いる
+	srand(t);
+	printf("seed=%d \n", t);
+
+	puts("----------------1. Extract basis-dictionary----------------");
+	/* 辞書候補集合のデータ数d取得 */
+	if (m.select == 0) {
+		fp = popen("ls -1F "DICT_IMG" | grep -v / | wc -l ", "r");
+	} else if (m.select == 1 || m.select == 2) {
+		fp = popen("ls -1F "DIC_CAND" | grep -v / | wc -l ", "r");
+	}
+	fgets(buf, 9, fp);
+	d = atoi(buf);
+	pclose(fp);
+
+	candi = (dict *) calloc(d, sizeof(dict));
+	candi_lbp = (dict *) calloc(d, sizeof(dict));
+
+
+	if (m.text_cnvrt == 1) {
+		system("rm "DICT_TXT"/*");
+		system("rm "DICT_DIC"/*");
+		system("rm "LBP_DICT_TXT"/*");
+		CreateLbpImage(m, d, fnn, candi_lbp);
+	}
+
+	Extract(m, d, fnn, candi);
+	ExtractLbp(m, d, fnn, candi_lbp);
+
+	sel_dict = (struct dict *) calloc(num_basis, sizeof(struct dict));
+	lbp_sel_dict = (struct dict *) calloc(num_basis, sizeof(struct dict));
+
+	if (m.select == 1) {
+		puts(
+				"----------------2. Select basis-dictionary----------------");
+		system("rm "SEL_DIC"/*");
+		SelectProposal(d, candi, num_basis, sel_dict, m, t);
+		system("rm "LBP_SEL_DIC"/*");
+		LbpSelectProposal(d, candi_lbp, num_basis, lbp_sel_dict, m, t);
+	} else if (m.select == 2) {
+		puts(
+				"----------------Select basis-dictionary(based on k-means centroid)----------------");
+		system("rm "SEL_DIC"/*");
+		SelectBaseline(d, candi, num_basis, m, sel_dict);
+		system("rm "LBP_SEL_DIC"/*");
+		LbpSelectBaseline(d, candi_lbp, num_basis, m, lbp_sel_dict);
+	}
+
+	if (m.knn == 1) {
+		puts("----------------Load Example Data.----------------");
+		puts("aa");
+		fp = popen("ls -1F "EXMPL_IMG" | grep -v / | wc -l ", "r");
+
+		if (fp == NULL) {
+			puts("Ooops");
+		}
+		fgets(buf, 9, fp);
+		e = atoi(buf);
+		pclose(fp);
+		puts("aa");
+		exmpl = (dict *) malloc(sizeof(dict) * e * 2);
+		if (exmpl == NULL) {
+			puts("memory error!");
+			exit(1);
+		}
+		if (m.text_cnvrt == 1) {
+			system("rm "EXMPL_TXT"/*");
+			system("rm "LBP_EXMPL_TXT"/*");
+		}
+		puts("aa");
+		ExtractExmpl(m, e, exmpl);
+		Labeling(e, exmpl);
+
+	}
+
+	if (m.knn == 1) {
+		puts("----------------Convert Example-data----------------");
+		if (m.convert == 0) {
+			exmpl_pgr = (patch_graph *) malloc(sizeof(patch_graph) * (e) * (e));
+			if (exmpl_pgr == NULL) {
+				puts("memory error!");
+				exit(1);
+			}
+		}
+		if (m.convert == 1) {
+			exmpl_pgr = (patch_graph *) malloc(sizeof(patch_graph) * e);
+			if (exmpl_pgr == NULL) {
+				puts("memory error!");
+				exit(1);
+			}
+		}
+		if (m.select == 0) {
+			CompressExmpl(m, d, exmpl, candi, candi_lbp, e, exmpl_pgr);
+		}
+		if (m.select == 1 || m.select == 2) {
+			CompressExmpl(m, num_basis, exmpl, sel_dict, lbp_sel_dict, e,
+					exmpl_pgr);
+		}
+	}
+
+	puts("----------------Convert test-image to text----------------");
+	fp = popen("ls -1F "TEST_IMG" | grep -v / | wc -l ", "r");
+	fgets(buf, 9, fp);
+	n = atoi(buf);
+	pclose(fp);
+	test = (struct dict *) malloc(sizeof(struct dict) * n);
+	lbp_test = (struct dict *) malloc(sizeof(struct dict) * n);
+	only_image2text(n, m, fnn, test); /* データの画像テキスト化 */
+	lbp_only_image2text(n, m, fnn, lbp_test);
+
+	pgr = (patch_graph *) malloc(sizeof(patch_graph) * (n) * (n));
+	dic = (point *) malloc(sizeof(point) * (d) * (d));
+
+	if (m.knn == 1) {
+		puts("----------------Labeling test-data----------------");
+		Labeling(n, test);
+		result = (knn_result *) malloc(sizeof(knn_result) * n);
+		if (m.select == 0) {
+			retrn = KnnSearch(n, m, d, pgr, exmpl_pgr, k, dic, candi,
+					candi_lbp, test, exmpl, e, result, num_basis);
+		} else if (m.select == 1 || m.select == 2) {
+			retrn = KnnSearch(n, m, num_basis, pgr, exmpl_pgr, k, dic,
+					sel_dict, lbp_sel_dict, test, exmpl, e, result, num_basis);
+		}
+	}
+
+	ave_rate = retrn;
+	sprintf(fname, OUTPUT"/rate/num%d.dat", num_basis);
+	if ((fp = fopen(fname, "a+")) == NULL) {
+		printf("file name miss\n");
+		exit(1);
+	}
+	fprintf(fp, "%d %f\n", t, ave_rate);
+	fclose(fp);
+# ifdef AB
+#endif
+
+	free(exmpl_pgr);
+	free(candi);
+	free(pgr);
+	free(dic);
+# ifdef AA
+#endif
+	puts("----------------Finished----------------");
+
+	exit(0);
+}

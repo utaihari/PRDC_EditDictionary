@@ -1,0 +1,7 @@
+set key outside center top reverse
+set size 0.7,0.7
+set term postscript eps
+set out '/dev/null'
+plot  "$0" index 1 usi $2:$3 ti "build" with po pt 7 lc rgb "red" ps 0.7,"$0" index 2 usi $2:$3 ti "residense" with po pt 7 lc rgb "blue" ps 0.7,"$0" index 3 usi $2:$3 ti "forest" with po pt 7 lc rgb "green" ps 0.7,"$0" index 4 usi $2:$3 ti "intersection" with po pt 7 lc rgb "orange" ps 0.7,"$0" index 5 usi $2:$3 ti "river" with po pt 7 lc rgb "black" ps 0.7, "$1" index 1 usi $2:$3 ti "query-build" with po pt 6 lc rgb "red" ps 0.7,"$1" index 2 usi $2:$3 ti "query-residense" with po pt 6 lc rgb "blue" ps 0.7,"$1" index 3 usi $2:$3 ti "query-forest" with po pt 6 lc rgb "green" ps 0.7,"$1" index 4 usi $2:$3 ti "query-intersection" with po pt 6 lc rgb "orange" ps 0.7,"$1" index 5 usi $2:$3 ti "query-river" with po pt 6 lc rgb "black" ps 0.7
+set out "$4"
+replot

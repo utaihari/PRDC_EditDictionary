@@ -1,0 +1,345 @@
+﻿#include<stdio.h>
+#include<stdlib.h>
+#include"cv-mst.h"
+#include"msort.h"
+
+int hnum,wnum;
+
+
+/****************************************************************************
+* 関数名 : Rootbreaker_Wurm
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 分割されたMSTパーツ毎に根ノード更新, 及びパッチの分類情報取得
+* 引数   : 
+* 戻り値 : 分割数
+****************************************************************************/
+int Rootbreaker_Wurm(patch_graph *pgr,patch_graph_edge *pgr_edge,int n){
+	int i,j,hrg,cnum=0;
+	int *counter;
+
+
+	for(i=0;i<n;i++){
+		pgr[i].root=i;
+	}
+	/*根ノード初期化*/
+	for(i=0;i<(wnum-1+(2*wnum-1)*(hnum-1));i++){
+		if(pgr_edge[i].mst_hrg){
+			if(!pgr_edge[i].cutted_hrg){
+				if(pgr[pgr_edge[i].a_pgr].root>pgr[pgr_edge[i].b_pgr].root){
+					Hypergenesis(pgr,pgr[pgr_edge[i].a_pgr].root,pgr[pgr_edge[i].b_pgr].root);
+				}else{
+					Hypergenesis(pgr,pgr[pgr_edge[i].b_pgr].root,pgr[pgr_edge[i].a_pgr].root);
+				}
+			}
+		}
+	}
+	/*分割されたMSTパーツ毎に根ノード更新*/
+
+
+	counter=(int *)malloc(sizeof(int)*(hnum*wnum));
+	
+
+	/*根ノード番号保存配列, クラスタ番号保存配列, カウンタ初期化*/
+	for(i=0;i<n;i++){
+		hrg=1;
+		for(j=0;j<cnum;j++){
+			if(pgr[i].root==counter[j]){
+				hrg=0;
+				/*調べるノードの根ノードと保存されていた根ノードが同じならばフラグを折る*/
+				break;
+			}
+		}
+		if(hrg){
+			counter[cnum]=pgr[i].root;
+			/*根ノードの番号を保存*/
+			pgr[i].cl_num=cnum;
+			/*カウンタ(クラスタ番号)を保存*/
+			cnum++;
+			/*カウンタ増加*/
+		}else{
+			pgr[i].cl_num=j;
+			/*フラグが折れていれば, 合致した保存番号(クラスタ番号)を保存*/
+		}
+	}
+	if(counter != NULL){
+		free(counter);
+		counter = NULL;
+	}
+	return cnum;
+}
+
+/****************************************************************************
+* 関数名 : Mana_Severance
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : ヒストグラムで閾値割合以下のMSTエッジを切る
+* 引数   : 
+* 戻り値 : なし
+****************************************************************************/
+void Mana_Severance(patch_graph *pgr,patch_graph_edge *pgre,double per,int n,mode m){
+	int i,j,check_leaf,counter=0,mst_num,per_num;
+
+
+	if(m.leaf_check==1){
+		/*リーフノードのエッジの除外*/
+		for(i=0;i<n;i++){
+			check_leaf=0;
+			for(j=0;j<4;j++){
+				if(!(pgr[i].c_patch[j]==-1)){
+					check_leaf+=pgr[i].pgredge[j]->mst_hrg;
+				}
+			}
+			if(check_leaf==1){
+				for(j=0;j<4;j++){
+					if(!(pgr[i].c_patch[j]==-1)&&pgr[i].pgredge[j]->mst_hrg){
+						pgr[i].pgredge[j]->shroud_hrg=1;
+					}
+				}
+			}
+		}
+	}
+
+
+	mst_num=hnum*wnum-1;
+	per_num=mst_num*(1-per);
+	for(i=wnum-1+(2*wnum-1)*(hnum-1);0<=i;i--){
+		if(pgre[i].mst_hrg){
+			if(!pgre[i].shroud_hrg){
+				counter++;
+				if(counter<=per_num){
+					pgre[i].cutted_hrg=1;
+				}
+			}
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : Hypergenesis
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 根ノード検索
+* 引数   : パッチグラフ及びエッジ情報, 走査する根ノード番号, 更新する根ノード番号
+* 戻り値 : なし
+****************************************************************************/
+void Hypergenesis(patch_graph *pgr,int cpr_num,int root_num){
+	int i;
+
+
+	pgr[cpr_num].root=root_num;
+	/*根ノード保存*/
+
+
+	for(i=0;i<hnum*wnum;i++){
+		if(pgr[i].root==cpr_num){
+			pgr[i].root=root_num;
+		}
+	}
+	/*下右上左でエッジ走査, 更新*/
+}
+
+/****************************************************************************
+* 関数名 : Beacon_of_Destiny
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : CV_MSTの作成
+* 引数   : パッチグラフ及びエッジ情報
+* 戻り値 : なし
+****************************************************************************/
+void Beacon_of_Destiny(patch_graph *pgr,patch_graph_edge *pgre){
+	int i;
+
+
+	for(i=0;i<(wnum-1+(2*wnum-1)*(hnum-1));i++){
+		if(!(pgr[pgre[i].a_pgr].root==pgr[pgre[i].b_pgr].root)){
+		/*始点ノードと終点ノードの根ノードが同じでなければ根ノード更新し, MSTフラグを立てる*/
+			if(pgr[pgre[i].a_pgr].root>pgr[pgre[i].b_pgr].root){
+				Hypergenesis(pgr,pgr[pgre[i].a_pgr].root,pgr[pgre[i].b_pgr].root);
+			}else{
+				Hypergenesis(pgr,pgr[pgre[i].b_pgr].root,pgr[pgre[i].a_pgr].root);
+			}
+			/*根ノードのナンバが大きいツリーの根ノードを更新*/
+			pgre[i].mst_hrg=1;
+			/*MSTフラグを立てる*/
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : compare_cv
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 比較関数
+* 引数   : 
+* 戻り値 : なし
+****************************************************************************/
+int compare_cv(const void* _a,const void* _b){
+	patch_graph_edge* a=(patch_graph_edge *)_a;
+	patch_graph_edge* b=(patch_graph_edge *)_b;
+
+
+	if(a->weight > b->weight){
+		return 1;
+	}else if(a->weight < b->weight){
+		return -1;
+	}else{
+		return 0;
+	}
+}
+
+/****************************************************************************
+* 関数名 : cvmst
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : CVMSTの作成
+* 引数   : MST情報, MST_edge情報, 次元数, パッチ数(水平パッチ数and垂直パッチ数)
+* 戻り値 : なし
+****************************************************************************/
+void cvmst(patch_graph *pgr,patch_graph_edge *pgr_edge,int d,int n){
+	int i;
+
+
+	qsort(pgr_edge,(wnum-1+(2*wnum-1)*(hnum-1)),sizeof(patch_graph_edge),compare_cv);
+	//msort(pgr_edge,(wnum-1+(2*wnum-1)*(hnum-1)),sizeof(patch_graph_edge),compare_cv);
+	/*weightの軽い順にソート*/
+	for(i=0;i<(wnum-1+(2*wnum-1)*(hnum-1));i++){
+		if((pgr_edge[i].a_pgr-pgr_edge[i].b_pgr)==1){
+		/*横方向エッジ*/
+			pgr[pgr_edge[i].b_pgr].pgredge[RIGHT]=&pgr_edge[i];
+			pgr[pgr_edge[i].a_pgr].pgredge[LEFT]=&pgr_edge[i];
+		}else if((pgr_edge[i].a_pgr-pgr_edge[i].b_pgr)==wnum){
+		/*縦方向エッジ*/
+			pgr[pgr_edge[i].b_pgr].pgredge[BELOW]=&pgr_edge[i];
+			pgr[pgr_edge[i].a_pgr].pgredge[ABOVE]=&pgr_edge[i];
+		}
+	}
+	/*ノードとエッジリンク*/
+	Beacon_of_Destiny(pgr,pgr_edge);
+	/*MST作成*/
+}
+
+/****************************************************************************
+* 関数名 : Cultivate
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : CVMSTの情報入力
+* 引数   : MST情報, MST_edge情報, 次元数, パッチ数(水平パッチ数and垂直パッチ数)
+* 戻り値 : なし
+****************************************************************************/
+void Cultivate(patch_graph *pgr,patch_graph_edge *pgr_edge,mode m,int d,int n){
+	int i,j,l,counter=0;
+	double wave_cv,wave_c;
+
+
+	for(i=0;i<n;i++){
+		for(j=0;j<2;j++){
+			if(!(pgr[i].c_patch[j]==-1)){
+				pgr_edge[counter].b_pgr=pgr[i].node_num;
+				/*始点設定*/
+				pgr_edge[counter].a_pgr=pgr[i].c_patch[j];
+				/*終点設定*/
+				/*常に始点のほうがパッチナンバは小さい*/
+
+
+				pgr_edge[counter].mst_hrg=0;
+				/*MSTフラグ初期化*/
+				pgr_edge[counter].shroud_hrg=0;
+				/*被覆エッジフラグ初期化*/
+				pgr_edge[counter].cutted_hrg=0;
+				/*切断エッジフラグ初期化*/
+
+
+				/*エッジの重み設定*/
+				wave_cv=0;
+
+
+				//for(l=0;l<d;l++){
+				//	wave_cv+=fabs((pgr[i].cv_num[l]*pgr[i].cv_num[l]-pgr[pgr[i].c_patch[j]].cv_num[l]*pgr[pgr[i].c_patch[j]].cv_num[l]));
+				//}
+				//wave_cv=sqrt(wave_cv);
+				/*ユークリッド距離を利用*/
+
+
+				//for(l=0;l<d;l++){
+				//	wave_cv+=fabs((pgr[i].cv_num[l]/d)-(pgr[pgr[i].c_patch[j]].cv_num[l]/d));
+				//}
+				/*通常値*/
+				/*CVの重み*/
+
+
+				wave_c=0;
+				
+				
+				for(l=0;l<3;l++){
+					wave_c+=fabs((pgr[i].color_ave[l]*pgr[i].color_ave[l]/(255*255)-pgr[pgr[i].c_patch[j]].color_ave[l]*pgr[pgr[i].c_patch[j]].color_ave[l]/(255*255)));
+				}
+				wave_c=sqrt(wave_c);
+				/*ユークリッド距離を利用*/
+
+
+				//for(l=0;l<3;l++){
+				//	wave_c+=fabs((pgr[i].color_ave[l]/(255*3))-(pgr[pgr[i].c_patch[j]].color_ave[l]/(255*3)));
+				//}
+				/*通常値*/
+				/*Colorの重み*/
+
+
+				pgr_edge[counter].weight=wave_cv*m.per_cv+wave_c*m.per_color;
+				/*合計*/
+				counter++;
+				/*カウンタ増やす*/
+			}
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : Leveler
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : CVMSTの領域確保
+* 引数   : MST情報, 次元数, パッチ数(水平パッチ数and垂直パッチ数)
+* 戻り値 : なし
+****************************************************************************/
+void Leveler(patch_graph *pgr,int d,int w,int h){
+	int i,n;
+	hnum=h;
+	wnum=w;
+	n=h*w;
+	for(i=0;i<n;i++){
+		pgr[i].node_num=i;
+		pgr[i].cv_num = (double *)malloc(sizeof(double)*d);
+		pgr[i].c_patch[BELOW]=i+wnum;
+		pgr[i].c_patch[RIGHT]=i+1;
+		pgr[i].c_patch[ABOVE]=i-wnum;
+		pgr[i].c_patch[LEFT]=i-1;
+		pgr[i].root=i;
+
+		/*端パッチの判定*/
+		if(pgr[i].c_patch[BELOW]>=n){
+			pgr[i].c_patch[BELOW]=-1;
+		}
+		/*最下の場合*/
+		if((((pgr[i].node_num+1)%wnum)==0)&&((pgr[i].c_patch[RIGHT]%wnum)==0)){
+			pgr[i].c_patch[RIGHT]=-1;
+		}
+		/*最右の場合*/
+		if(pgr[i].c_patch[ABOVE]<0){
+			pgr[i].c_patch[ABOVE]=-1;
+		}
+		/*最上の場合*/
+		if(((pgr[i].node_num%wnum)==0)&&(((pgr[i].c_patch[LEFT]+1)%wnum)==0)){
+			pgr[i].c_patch[LEFT]=-1;
+		}
+		/*最左の場合*/
+	}
+}

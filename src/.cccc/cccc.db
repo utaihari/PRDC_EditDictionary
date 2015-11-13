@@ -1,0 +1,144 @@
+CCCC_Module@CvScalar@@
+CCCC_Module@anonymous@@
+CCCC_Module@char@builtin@
+CCCC_ModExt@char@builtin@<nofile>@0@builtin definition@d?????@@0@d@
+CCCC_Module@classify@struct@
+CCCC_ModExt@classify@struct@k-means.h@18@definition@????0@LOC:7 COM:6 MVG:0@0@d@
+CCCC_Module@dict@struct@
+CCCC_ModExt@dict@struct@cv-mst.h@30@definition@????0@LOC:9 COM:2 MVG:0@0@d@
+CCCC_Module@double@builtin@
+CCCC_ModExt@double@builtin@<nofile>@0@builtin definition@d?????@@0@d@
+CCCC_Module@edge@struct@
+CCCC_ModExt@edge@struct@ds.h@30@definition@????0@LOC:7 COM:7 MVG:0@0@d@
+CCCC_Module@filenn@struct@
+CCCC_ModExt@filenn@struct@ds.h@58@definition@????0@LOC:5 COM:1 MVG:0@0@d@
+CCCC_Module@float@builtin@
+CCCC_ModExt@float@builtin@<nofile>@0@builtin definition@d?????@@0@d@
+CCCC_Module@imagedata@struct@
+CCCC_ModExt@imagedata@struct@image2text.h@10@definition@????0@LOC:6 COM:5 MVG:0@0@d@
+CCCC_Module@int@builtin@
+CCCC_ModExt@int@builtin@<nofile>@0@builtin definition@d?????@@0@d@
+CCCC_Module@long@builtin@
+CCCC_ModExt@long@builtin@<nofile>@0@builtin definition@d?????@@0@d@
+CCCC_Module@lzw_node@struct@
+CCCC_ModExt@lzw_node@struct@lzw.h@14@definition@????0@LOC:8 COM:11 MVG:0@0@d@
+CCCC_Module@mode@struct@
+CCCC_ModExt@mode@struct@ds.h@65@definition@????0@LOC:12 COM:10 MVG:0@0@d@
+CCCC_Module@node@struct@
+CCCC_ModExt@node@struct@ds.h@42@definition@????0@LOC:7 COM:8 MVG:0@0@d@
+CCCC_Module@patch_graph@struct@
+CCCC_ModExt@patch_graph@struct@cv-mst.h@9@definition@????0@LOC:10 COM:9 MVG:0@0@d@
+CCCC_Module@patch_graph_edge@struct@
+CCCC_ModExt@patch_graph_edge@struct@cv-mst.h@42@definition@????0@LOC:8 COM:6 MVG:0@0@d@
+CCCC_Module@point@struct@
+CCCC_ModExt@point@struct@k-means.h@7@definition@????0@LOC:9 COM:7 MVG:0@0@d@
+CCCC_Module@que@struct@
+CCCC_ModExt@que@struct@ds.h@51@definition@????0@LOC:5 COM:2 MVG:0@0@d@
+CCCC_Module@void@builtin@
+CCCC_ModExt@void@builtin@<nofile>@0@builtin definition@d?????@@0@d@
+CCCC_Module@way@struct@
+CCCC_ModExt@way@struct@ds.h@24@definition@????0@LOC:4 COM:12 MVG:0@0@d@
+CCCC_Member@anonymous@Accumulated_Knowledge@@(point *,int,int,point *)@
+CCCC_MemExt@anonymous@Accumulated_Knowledge@@(point *,int,int,point *)@chore.h@15@declaration@F????@LOC:1 COM:1 MVG:0@?@D@
+CCCC_Member@anonymous@Beacon_of_Destiny@@(patch_graph *,patch_graph_edge *)@
+CCCC_MemExt@anonymous@Beacon_of_Destiny@@(patch_graph *,patch_graph_edge *)@cv-mst.h@62@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@Cultivate@@(patch_graph *,patch_graph_edge *,mode,int,int)@
+CCCC_MemExt@anonymous@Cultivate@@(patch_graph *,patch_graph_edge *,mode,int,int)@cv-mst.h@65@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@Hypergenesis@@(patch_graph *,int,int)@
+CCCC_MemExt@anonymous@Hypergenesis@@(patch_graph *,int,int)@cv-mst.h@61@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@Leveler@@(patch_graph *,int,int,int)@
+CCCC_MemExt@anonymous@Leveler@@(patch_graph *,int,int,int)@cv-mst.h@66@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@Mana_Severance@@(patch_graph *,patch_graph_edge *,double,int,mode)@
+CCCC_MemExt@anonymous@Mana_Severance@@(patch_graph *,patch_graph_edge *,double,int,mode)@cv-mst.h@60@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@OutCVcsv@@(point *,int,int,point *,int)@
+CCCC_MemExt@anonymous@OutCVcsv@@(point *,int,int,point *,int)@chore.h@20@declaration@F????@LOC:1 COM:4 MVG:0@?@D@
+CCCC_Member@anonymous@Rootbreaker_Wurm@@(patch_graph *,patch_graph_edge *,int)@
+CCCC_MemExt@anonymous@Rootbreaker_Wurm@@(patch_graph *,patch_graph_edge *,int)@cv-mst.h@59@declaration@F???0@LOC:1 COM:1 MVG:0@0@D@
+CCCC_Member@anonymous@add_que@@(que *,node *,int)@
+CCCC_MemExt@anonymous@add_que@@(que *,node *,int)@image2text.h@21@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@bfsearch@@(FILE *,node *,int,mode)@
+CCCC_MemExt@anonymous@bfsearch@@(FILE *,node *,int,mode)@image2text.h@24@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@breakLink@@(node **,edge *,int,edge *,int)@
+CCCC_MemExt@anonymous@breakLink@@(node **,edge *,int,edge *,int)@image2text.h@17@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@calc_distance@@(double *,double *,int)@
+CCCC_MemExt@anonymous@calc_distance@@(double *,double *,int)@k-means.h@26@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@compColor@@(CvScalar,CvScalar)@
+CCCC_MemExt@anonymous@compColor@@(CvScalar,CvScalar)@image2text.h@18@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@compare_cv@@(const void *,const void *)@
+CCCC_MemExt@anonymous@compare_cv@@(const void *,const void *)@cv-mst.h@63@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@convert2text@@(FILE *,node *,mode)@
+CCCC_MemExt@anonymous@convert2text@@(FILE *,node *,mode)@image2text.h@19@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@cvmst@@(patch_graph *,patch_graph_edge *,int,int)@
+CCCC_MemExt@anonymous@cvmst@@(patch_graph *,patch_graph_edge *,int,int)@cv-mst.h@64@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@dfsearch@@(FILE *,node *,int,mode)@
+CCCC_MemExt@anonymous@dfsearch@@(FILE *,node *,int,mode)@image2text.h@23@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@edgeComp@@(const void *,const void *)@
+CCCC_MemExt@anonymous@edgeComp@@(const void *,const void *)@Kruskal.h@9@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@encode@@(lzw_node *)@
+CCCC_MemExt@anonymous@encode@@(lzw_node *)@lzw.h@27@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@encode_fix2@@(lzw_node *)@
+CCCC_MemExt@anonymous@encode_fix2@@(lzw_node *)@lzw.h@23@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@finalize_dics@@(lzw_node **,int)@
+CCCC_MemExt@anonymous@finalize_dics@@(lzw_node **,int)@chore.h@13@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@finalize_file@@()@
+CCCC_MemExt@anonymous@finalize_file@@()@lzw.h@24@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@finalize_pgr@@(patch_graph *,int)@
+CCCC_MemExt@anonymous@finalize_pgr@@(patch_graph *,int)@chore.h@12@declaration@F????@LOC:1 COM:1 MVG:0@?@D@
+CCCC_Member@anonymous@findRoot@@(node *)@
+CCCC_MemExt@anonymous@findRoot@@(node *)@Kruskal.h@7@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@flush_bits@@(FILE *)@
+CCCC_MemExt@anonymous@flush_bits@@(FILE *)@bitIO.h@6@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@get_bit@@(FILE *)@
+CCCC_MemExt@anonymous@get_bit@@(FILE *)@bitIO.h@4@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@get_bits@@(FILE *,int)@
+CCCC_MemExt@anonymous@get_bits@@(FILE *,int)@bitIO.h@5@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@get_que@@(que *,int *)@
+CCCC_MemExt@anonymous@get_que@@(que *,int *)@image2text.h@20@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@graph2text@@(node **,edge *,int,FILE *,mode)@
+CCCC_MemExt@anonymous@graph2text@@(node **,edge *,int,FILE *,mode)@image2text.h@25@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@image2graph@@(IplImage *,node **,edge *,mode)@
+CCCC_MemExt@anonymous@image2graph@@(IplImage *,node **,edge *,mode)@image2text.h@29@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@image2text@@(IplImage *,char *,mode)@
+CCCC_MemExt@anonymous@image2text@@(IplImage *,char *,mode)@image2text.h@30@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@initialize_dics@@(int,int)@
+CCCC_MemExt@anonymous@initialize_dics@@(int,int)@lzw.h@30@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@initialize_file@@(char *,char *)@
+CCCC_MemExt@anonymous@initialize_file@@(char *,char *)@lzw.h@29@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@initilalize_work@@()@
+CCCC_MemExt@anonymous@initilalize_work@@()@lzw.h@28@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@k_means@@(point *,classify *,int,int,int,mode)@
+CCCC_MemExt@anonymous@k_means@@(point *,classify *,int,int,int,mode)@k-means.h@27@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@kuraskal@@(edge *,int,int)@
+CCCC_MemExt@anonymous@kuraskal@@(edge *,int,int)@Kruskal.h@10@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@ltsearch@@(FILE *,node *,int,mode)@
+CCCC_MemExt@anonymous@ltsearch@@(FILE *,node *,int,mode)@image2text.h@22@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@makeLink@@(node **,edge *,int,edge *,int)@
+CCCC_MemExt@anonymous@makeLink@@(node **,edge *,int,edge *,int)@image2text.h@26@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@msort@@(...)@
+CCCC_MemExt@anonymous@msort@@(...)@msort.h@21@declaration@F????@LOC:6 COM:15 MVG:0@?@D@
+CCCC_Member@anonymous@new_node@@(lzw_node *,int,int)@
+CCCC_MemExt@anonymous@new_node@@(lzw_node *,int,int)@lzw.h@25@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@put_bit@@(FILE *,int)@
+CCCC_MemExt@anonymous@put_bit@@(FILE *,int)@bitIO.h@7@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@put_bits@@(FILE *,int,int)@
+CCCC_MemExt@anonymous@put_bits@@(FILE *,int,int)@bitIO.h@8@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@quantizationRGB4d@@(node **,int,int)@
+CCCC_MemExt@anonymous@quantizationRGB4d@@(node **,int,int)@image2text.h@28@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@sameRoot@@(node *,node *)@
+CCCC_MemExt@anonymous@sameRoot@@(node *,node *)@Kruskal.h@8@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_Member@anonymous@search_child@@(lzw_node *,int)@
+CCCC_MemExt@anonymous@search_child@@(lzw_node *,int)@lzw.h@26@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@setWeight@@(edge *,mode)@
+CCCC_MemExt@anonymous@setWeight@@(edge *,mode)@image2text.h@27@declaration@F???0@LOC:1 COM:0 MVG:0@0@D@
+CCCC_Member@anonymous@unionRoot@@(node *,node *)@
+CCCC_MemExt@anonymous@unionRoot@@(node *,node *)@Kruskal.h@6@declaration@F????@LOC:1 COM:0 MVG:0@?@D@
+CCCC_RejExt@Kruskal.h@1@<file scope items>@F????@LOC:0 COM:0 MVG:0@?@r@
+CCCC_RejExt@bitIO.h@1@<file scope items>@F????@LOC:1 COM:0 MVG:0@?@r@
+CCCC_RejExt@chore.h@1@<file scope items>@F????@LOC:1 COM:0 MVG:0@?@r@
+CCCC_RejExt@cv-mst.h@1@<file scope items>@F???0@LOC:1 COM:0 MVG:0@0@r@
+CCCC_RejExt@ds.h@1@<file scope items>@????0@LOC:1 COM:0 MVG:0@0@r@
+CCCC_RejExt@image2text.h@1@<file scope items>@F???0@LOC:1 COM:0 MVG:0@0@r@
+CCCC_RejExt@k-means.h@1@<file scope items>@F???0@LOC:1 COM:0 MVG:0@0@r@
+CCCC_RejExt@limits.h@1@<file scope items>@?????@LOC:1 COM:1 MVG:0@?@r@
+CCCC_RejExt@lzw.h@1@<file scope items>@F???0@LOC:1 COM:0 MVG:0@0@r@
+CCCC_RejExt@msort.h@1@<file scope items>@F????@LOC:1 COM:0 MVG:0@?@r@

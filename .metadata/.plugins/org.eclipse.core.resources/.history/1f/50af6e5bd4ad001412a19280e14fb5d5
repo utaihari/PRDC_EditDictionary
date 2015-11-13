@@ -1,0 +1,82 @@
+﻿#ifndef INCLUDE_DS
+#define INCLUDE_DS
+
+#include<cv.h>
+#include<highgui.h>
+#include<cxcore.h>
+#include"lzw.h"
+
+#define BUFF_SIZE 1024
+
+/* 方向情報を表す */
+#define BELOW 0	/* 下 */
+#define RIGHT 1	/* 右 */
+#define ABOVE 2	/* 上 */
+#define LEFT 3	/* 左 */
+
+/*探索方法*/
+#define USE_BFSEARCH	0 /* 幅優先探索 */
+#define USE_DFSEARCH	1 /* 深さ優先探索 */
+#define USE_LTSEARCH	2 /* 重さ優先探索 */
+
+
+/* 方向 */
+struct way{
+	struct node* next;	/* ノード */
+	struct edge* edge;	/* エッジ */
+};
+
+/* 枝（エッジ）を表すデータ構造 */
+struct edge{
+	int WFlag;			/* 方向フラグ */
+	int MstFlag;		/* MSTフラグ */
+	struct node* SN;	/* 枝の始点 */
+	struct node* EN;	/* 枝の終点 */
+	/* ※重さの表し方は変更される可能性大 */
+	double weight;	/* 重さ */
+};
+
+/* 木構造を表す構造体 */
+/* ※メモリの無駄だから使う色空間を指定してそれだけ保存する？ */
+/* 　それとも全部保持しておいて一気に結果だす？ */
+struct node{
+	int coordinate[2];		/* 座標（デバッグ用？） */
+	struct node*  parent;	/* 親ノード */
+	struct way* w[4];		/* 各方向のエッジとノードの情報 */
+	CvScalar clr;			/* 色データ */
+	int rank;				/* ランク */
+};
+
+/* キューのデータ構造。幅優先探索の為 */
+struct que{
+	struct que* next;
+	int way;	/* どこから来たか */
+	node* data;
+};
+
+/*入力ファイルの名前とナンバ*/
+struct filenn{
+	char filename[64];
+	char foldername[64];
+	int filenum;
+};
+
+/* モード */
+struct mode{
+	int search;			/* 探索法 */
+	int sl_compression;	/*教師あり辞書作成(0==教師なし, 1==教師あり, 2==保存済み辞書利用)*/
+	int leaf_check;		/*MSTの葉ノードをチェック(0==チェックしない, 1==分割前にチェック, 2==分割後にチェック(結局余り意味ないので使うかは未定))*/
+	int foldername;		/*使用航空画像の選択(0==ゴルフ, 1==人工画像, 2==沿岸街, 3==調布, 4==泉, 5==田んぼ, 6==東京駅)*/
+	int km_style;		
+	int select;
+	int convert;
+	bool knn;
+	bool text_cnvrt; /* テキスト変換&辞書作成をおこなうかどうか */
+	bool del_dic;
+	bool add;
+	bool lbp;
+	int first_select;
+	int criteria;
+};
+
+#endif

@@ -1,0 +1,1375 @@
+﻿#include<stdio.h>
+#include<stdlib.h>	/* rand関数の為 */
+#include<time.h>	/* rand関数の為,実行時間計測の為 */
+#include<string.h>	/* strcat関数の為 */
+#include<limits.h>
+#include<math.h>	/* pow関数の為 */
+#include"image2text.h"
+#include"Kruskal.h"
+#include"bitIO.h"
+#include"ds.h"
+
+/****************************************************************************
+* 関数名 : breakLink
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : ノードとエッジのリンクを切って解放する関数
+* 引数   : ノードデータ:graph,エッジデータ:nedge
+* 戻り値 : なし
+****************************************************************************/
+void breakLink(node** graph,edge* elist,int edge_num,edge* mstlist, int mst_num){
+	int i,cnt;
+
+
+	for(i=cnt=0;i<edge_num;i++){
+		/* MSTとなるエッジだったらノードとのリンクを切る */
+		if(elist[i].MstFlag){
+			if(elist[i].SN->w[BELOW]){
+				if(elist[i].SN->w[BELOW] != NULL){
+					free(elist[i].SN->w[BELOW]);
+					elist[i].SN->w[BELOW] = NULL;
+				}
+				elist[i].SN->w[BELOW] = NULL;
+				if(elist[i].EN->w[ABOVE] != NULL){
+					free(elist[i].EN->w[ABOVE]);
+					elist[i].EN->w[ABOVE] = NULL;
+				}
+				elist[i].EN->w[ABOVE] = NULL;
+			}
+			if(elist[i].SN->w[ABOVE]){
+				if(elist[i].SN->w[ABOVE] != NULL){
+					free(elist[i].SN->w[ABOVE]);
+					elist[i].SN->w[ABOVE] = NULL;
+				}
+				elist[i].SN->w[ABOVE] = NULL;
+				if(elist[i].EN->w[BELOW] != NULL){
+					free(elist[i].EN->w[BELOW]);
+					elist[i].EN->w[BELOW] = NULL;
+				}
+				elist[i].EN->w[BELOW] = NULL;
+			}
+			if(elist[i].SN->w[RIGHT]){
+				if(elist[i].SN->w[RIGHT] != NULL){
+					free(elist[i].SN->w[RIGHT]);
+					elist[i].SN->w[RIGHT] = NULL;
+				}
+				elist[i].SN->w[RIGHT] = NULL;
+				if(elist[i].EN->w[LEFT] != NULL){
+					free(elist[i].EN->w[LEFT]);
+					elist[i].EN->w[LEFT] = NULL;
+				}
+				elist[i].EN->w[LEFT] = NULL;
+			}
+			if(elist[i].SN->w[LEFT]){
+				if(elist[i].SN->w[LEFT] != NULL){
+					free(elist[i].SN->w[LEFT]);
+					elist[i].SN->w[LEFT] = NULL;
+				}
+				if(elist[i].EN->w[RIGHT] != NULL){
+					free(elist[i].EN->w[RIGHT]);
+					elist[i].EN->w[RIGHT] = NULL;
+				}
+			}
+		}
+		if(cnt == mst_num){
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : compColor
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : color1とcolor2が同じ色か比較する。（color1とcolor2を同じ色空間にしてから使う事）
+* 引数   : 色1:color1, 色2:color2
+* 戻り値 : 1 or 0
+****************************************************************************/
+int compColor(CvScalar color1,CvScalar color2){
+	if(color1.val[0] != color2.val[0]){ return 0;
+	}else if(color1.val[1] != color2.val[1]){ return 0;
+	}else if(color1.val[2] != color2.val[2]){ return 0;
+	}else return 1;
+}
+
+/****************************************************************************
+* 関数名 : convert2text
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : 色情報と方向からテキスト化する関数
+* 引数   : 対象ファイル:txt, 色情報:color, 方向情:way, 色空間:mode
+* 戻り値 : なし
+****************************************************************************/
+void convert2text_horizon(FILE* txt,node* graph,mode nmode){
+	unsigned char code=0x00;
+	CvScalar color = graph->clr;
+	CvScalar c00,c01,c02,c03,c04,c05,c06,c07,c08,c09,c0A,c0B,c0C,c0D,c0E,c0F,
+			 c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c1A,c1B,c1C,c1D,c1E,c1F,
+			 c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c2A,c2B,c2C,c2D,c2E,c2F,
+			 c30,c31,c32,c33,c34,c35,c36,c37,c38,c39,c3A,c3B,c3C,c3D,c3E,c3F;
+	/* 使う色の指定 */
+	double a = 0x20-1, b = 0x60-1, c = 0xA0-1, d = 0xE0-1;
+	c00 = CV_RGB(a,a,a);c01 = CV_RGB(a,a,b);c02 = CV_RGB(a,a,c);c03 = CV_RGB(a,a,d);
+	c04 = CV_RGB(a,b,a);c05 = CV_RGB(a,b,b);c06 = CV_RGB(a,b,c);c07 = CV_RGB(a,b,d);
+	c08 = CV_RGB(a,c,a);c09 = CV_RGB(a,c,b);c0A = CV_RGB(a,c,c);c0B = CV_RGB(a,c,d);
+	c0C = CV_RGB(a,d,a);c0D = CV_RGB(a,d,b);c0E = CV_RGB(a,d,c);c0F = CV_RGB(a,d,d);
+	c10 = CV_RGB(b,a,a);c11 = CV_RGB(b,a,b);c12 = CV_RGB(b,a,c);c13 = CV_RGB(b,a,d);
+	c14 = CV_RGB(b,b,a);c15 = CV_RGB(b,b,b);c16 = CV_RGB(b,b,c);c17 = CV_RGB(b,b,d);
+	c18 = CV_RGB(b,c,a);c19 = CV_RGB(b,c,b);c1A = CV_RGB(b,c,c);c1B = CV_RGB(b,c,d);
+	c1C = CV_RGB(b,d,a);c1D = CV_RGB(b,d,b);c1E = CV_RGB(b,d,c);c1F = CV_RGB(b,d,d);
+	c20 = CV_RGB(c,a,a);c21 = CV_RGB(c,a,b);c22 = CV_RGB(c,a,c);c23 = CV_RGB(c,a,d);
+	c24 = CV_RGB(c,b,a);c25 = CV_RGB(c,b,b);c26 = CV_RGB(c,b,c);c27 = CV_RGB(c,b,d);
+	c28 = CV_RGB(c,c,a);c29 = CV_RGB(c,c,b);c2A = CV_RGB(c,c,c);c2B = CV_RGB(c,c,d);
+	c2C = CV_RGB(c,d,a);c2D = CV_RGB(c,d,b);c2E = CV_RGB(c,d,c);c2F = CV_RGB(c,d,d);
+	c30 = CV_RGB(d,a,a);c31 = CV_RGB(d,a,b);c32 = CV_RGB(d,a,c);c33 = CV_RGB(d,a,d);
+	c34 = CV_RGB(d,b,a);c35 = CV_RGB(d,b,b);c36 = CV_RGB(d,b,c);c37 = CV_RGB(d,b,d);
+	c38 = CV_RGB(d,c,a);c39 = CV_RGB(d,c,b);c3A = CV_RGB(d,c,c);c3B = CV_RGB(d,c,d);
+	c3C = CV_RGB(d,d,a);c3D = CV_RGB(d,d,b);c3E = CV_RGB(d,d,c);c3F = CV_RGB(d,d,d);
+	/* 使う色の数と方向によって処理を変える */
+		if(compColor(c00,color)){
+			code = 0x00;
+		}else if(compColor(c01,color)){
+			code = 0x01;
+		}else if(compColor(c02,color)){
+			code = 0x02;
+		}else if(compColor(c03,color)){
+			code = 0x03;
+		}else if(compColor(c04,color)){
+			code = 0x04;
+		}else if(compColor(c05,color)){
+			code = 0x05;
+		}else if(compColor(c06,color)){
+			code = 0x06;
+		}else if(compColor(c07,color)){
+			code = 0x07;
+		}else if(compColor(c08,color)){
+			code = 0x08;
+		}else if(compColor(c09,color)){
+			code = 0x09;
+		}else if(compColor(c0A,color)){
+			code = 0x0A;
+		}else if(compColor(c0B,color)){
+			code = 0x0B;
+		}else if(compColor(c0C,color)){
+			code = 0x0C;
+		}else if(compColor(c0D,color)){
+			code = 0x0D;
+		}else if(compColor(c0E,color)){
+			code = 0x0E;
+		}else if(compColor(c0F,color)){
+			code = 0x0F;
+		}else if(compColor(c10,color)){
+			code = 0x10;
+		}else if(compColor(c11,color)){
+			code = 0x11;
+		}else if(compColor(c12,color)){
+			code = 0x12;
+		}else if(compColor(c13,color)){
+			code = 0x13;
+		}else if(compColor(c14,color)){
+			code = 0x14;
+		}else if(compColor(c15,color)){
+			code = 0x15;
+		}else if(compColor(c16,color)){
+			code = 0x16;
+		}else if(compColor(c17,color)){
+			code = 0x17;
+		}else if(compColor(c18,color)){
+			code = 0x18;
+		}else if(compColor(c19,color)){
+			code = 0x19;
+		}else if(compColor(c1A,color)){
+			code = 0x1A;
+		}else if(compColor(c1B,color)){
+			code = 0x1B;
+		}else if(compColor(c1C,color)){
+			code = 0x1C;
+		}else if(compColor(c1D,color)){
+			code = 0x1D;
+		}else if(compColor(c1E,color)){
+			code = 0x1E;
+		}else if(compColor(c1F,color)){
+			code = 0x1F;
+		}else if(compColor(c20,color)){
+			code = 0x20;
+		}else if(compColor(c21,color)){
+			code = 0x21;
+		}else if(compColor(c22,color)){
+			code = 0x22;
+		}else if(compColor(c23,color)){
+			code = 0x23;
+		}else if(compColor(c24,color)){
+			code = 0x24;
+		}else if(compColor(c25,color)){
+			code = 0x25;
+		}else if(compColor(c26,color)){
+			code = 0x26;
+		}else if(compColor(c27,color)){
+			code = 0x27;
+		}else if(compColor(c28,color)){
+			code = 0x28;
+		}else if(compColor(c29,color)){
+			code = 0x29;
+		}else if(compColor(c2A,color)){
+			code = 0x2A;
+		}else if(compColor(c2B,color)){
+			code = 0x2B;
+		}else if(compColor(c2C,color)){
+			code = 0x2C;
+		}else if(compColor(c2D,color)){
+			code = 0x2D;
+		}else if(compColor(c2E,color)){
+			code = 0x2E;
+		}else if(compColor(c2F,color)){
+			code = 0x2F;
+		}else if(compColor(c30,color)){
+			code = 0x30;
+		}else if(compColor(c31,color)){
+			code = 0x31;
+		}else if(compColor(c32,color)){
+			code = 0x32;
+		}else if(compColor(c33,color)){
+			code = 0x33;
+		}else if(compColor(c34,color)){
+			code = 0x34;
+		}else if(compColor(c35,color)){
+			code = 0x35;
+		}else if(compColor(c36,color)){
+			code = 0x36;
+		}else if(compColor(c37,color)){
+			code = 0x37;
+		}else if(compColor(c38,color)){
+			code = 0x38;
+		}else if(compColor(c39,color)){
+			code = 0x39;
+		}else if(compColor(c3A,color)){
+			code = 0x3A;
+		}else if(compColor(c3B,color)){
+			code = 0x3B;
+		}else if(compColor(c3C,color)){
+			code = 0x3C;
+		}else if(compColor(c3D,color)){
+			code = 0x3D;
+		}else if(compColor(c3E,color)){
+			code = 0x3E;
+		}else if(compColor(c3F,color)){
+			code = 0x3F;
+		}
+	/* codeをファイルに書き出す */
+	put_bits(txt,code,8);
+	//printf("%d\n",code);
+}
+
+/****************************************************************************
+* 関数名 : quantizationRGB4d
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : RGBを4分割で量子化する関数
+* 引数   : ノードデータ:graph, 画像の幅:width, 画像の高さ:height
+* 戻り値 : なし
+****************************************************************************/
+void quantizationRGB4d(node** graph,int width,int height){
+	int x,y,i;
+	for(y = 0; y < height; y++){
+		for(x = 0; x < width; x++){
+			/* BGRの順番に量子化 */
+			for(i=0; i<3;i++){
+				if(graph[x][y].clr.val[i]  < 0x40){
+					graph[x][y].clr.val[i] = 0x20-1;
+				}else if(graph[x][y].clr.val[i] < 0x80){
+					graph[x][y].clr.val[i] = 0x60-1;
+				}else if(graph[x][y].clr.val[i] < 0xC0){
+					graph[x][y].clr.val[i] = 0xA0-1;
+				}else if(graph[x][y].clr.val[i] < 0x100 ){
+					graph[x][y].clr.val[i] = 0xE0-1;
+				}
+			}
+		}
+	
+	}
+}
+
+/****************************************************************************
+* 関数名 : image2text_horizon
+* 作成日 : 
+* 作成者 : Y.NAKAJIMA
+* 更新日 : 
+* 機能   : 水平スキャンで画像をテキスト化する関数
+* 引数   : 画像:img, テキスト名:text, モード:mode
+* 戻り値 : テキスト化されたファイルデータ
+****************************************************************************/
+FILE* image2text_horizon(IplImage* img,char* text,mode nmode){
+	node** graph=NULL;
+	edge* elist=NULL;
+	edge* mstlist=NULL;
+	FILE *txt;
+	int height = img->height;
+	int width = img->width;
+	int x,y,i,edge_num,mst_num;
+	CvScalar color;
+
+	/* テキスト化したものを出力するファイルの読み込み */
+	if((txt = fopen(text,"wb"))==NULL){
+		printf("error: no text file[%s]\n",text);
+		exit(1);
+	}
+
+	/* グラフのノードの領域確保 */
+	graph = (node **)malloc(sizeof(node)*width);
+	if(!graph){
+		printf("memory securing misssss (graph)\n");
+		return NULL;
+	}
+	for(i=0;i<width;i++){
+		graph[i] = (node *)malloc(sizeof(node)*height);
+		if(!graph[i]){
+			printf("memory securing miss (graph[%d])\n",i);
+			return NULL;
+		}
+	}
+
+	/* グラフのエッジの領域確保 */
+	edge_num = width-1+(2*width-1)*(height-1);
+//	elist = (edge *)malloc(sizeof(edge)*edge_num);
+//	if(!elist){
+//		printf("memory securing miss (elist)\n");
+//		return NULL;
+//	}
+
+	for(y = 0; y < height; y++){
+		for(x = 0; x < width; x++){
+			color = cvGet2D(img,x,y);
+			graph[x][y].clr.val[0] = color.val[0];
+			graph[x][y].clr.val[1] = color.val[1];
+			graph[x][y].clr.val[2] = color.val[2];
+			graph[x][y].clr.val[3] = 0;
+		}
+	}
+
+	quantizationRGB4d(graph,img->width,img->height);
+
+	for(y = 0; y < height; y++){
+			for(x = 0; x < width; x++){
+				convert2text_horizon(txt,&graph[x][y],nmode);
+			}
+	}
+
+	/* 後処理群 */
+	//breakLink(graph,elist,edge_num,mstlist,mst_num);/* ノードとエッジのリンクを切って領域解放 */
+	/* グラフノードの領域解放 */
+	for(i=0;i<width;i++){
+		if(graph[i] != NULL){
+			free(graph[i]);
+			graph[i] = NULL;
+		}
+	}
+	if(graph != NULL){
+		free(graph);
+		graph = NULL;
+	}
+	/* エッジの領域解放 */
+	if(elist != NULL){
+		free(elist);
+		elist = NULL;
+	}
+	fclose(txt);/* ファイルクローズ */
+	return txt;
+#ifdef EE
+#endif
+}
+
+/****************************************************************************
+* 関数名 : image2text_mst
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : MSTを用いて画像をテキスト化する関数
+* 引数   : 画像:img, テキスト名:text, モード:mode
+* 戻り値 : テキスト化されたファイルデータ
+****************************************************************************/
+FILE* image2text_mst(IplImage* img,char* text,mode nmode){
+	node** graph=NULL;
+	edge* elist=NULL;
+	edge* mstlist=NULL;
+	FILE *txt;
+	int height = img->height;
+	int width = img->width;
+	int i,edge_num,mst_num;
+
+
+	/* テキスト化したものを出力するファイルの読み込み */
+	if((txt = fopen(text,"wb"))==NULL){
+		printf("error: no text file[%s]\n",text);
+		exit(1);
+	}
+	/* グラフのノードの領域確保 */
+	graph = (node **)malloc(sizeof(node)*width);
+	if(!graph){
+		printf("memory securing miss (graph)\n");
+		return NULL;
+	}
+	for(i=0;i<width;i++){
+		graph[i] = (node *)malloc(sizeof(node)*height);
+		if(!graph[i]){
+			printf("memory securing miss (graph[i])\n");
+			return NULL;
+		}
+	}
+	/* グラフのエッジの領域確保 */
+	edge_num = width-1+(2*width-1)*(height-1);
+	elist = (edge *)malloc(sizeof(edge)*edge_num);
+	if(!elist){
+		printf("memory securing miss (elist)\n");
+		return NULL;
+	}
+	/* MSTグラフのエッジ数計算 */
+	mst_num = width*height-1;/* MSTのエッジの数を計算 */
+	/* グラフ化 */
+	image2graph(img,graph,elist,nmode);
+
+
+	/* MST化（クラスカル法） */
+	kuraskal(elist,edge_num,mst_num);
+	/* ノード情報とエッジ情報をリンクさせる */
+	makeLink(graph,elist,edge_num,mstlist,mst_num);
+
+	for(i=0; i<10; i++){
+	  //	  printf("%d\n",graph[i][0].w[BELOW].edge.MstFlag);
+	}
+	/* テキスト化 */
+	/* グラフ情報をテキスト化する */
+	txt = graph2text(graph,elist,width*height,txt,nmode);
+	/* 後処理群 */
+	breakLink(graph,elist,edge_num,mstlist,mst_num);/* ノードとエッジのリンクを切って領域解放 */
+	/* グラフノードの領域解放 */
+	for(i=0;i<width;i++){
+		free(graph[i]); graph[i] = NULL;
+	}
+	free(graph);
+	graph = NULL;
+	/* エッジの領域解放 */
+	free(elist);
+	elist = NULL;
+	fclose(txt);/* ファイルクローズ */
+	return txt;
+}
+
+/****************************************************************************
+* 関数名 : image2text_lbp
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : LBPを用いて画像をテキスト化する関数
+* 引数   : 画像:img, テキスト名:text, モード:mode
+* 戻り値 : テキスト化されたファイルデータ
+****************************************************************************/
+FILE* image2text_lbp(IplImage* img,char* text,mode nmode){
+	node** graph=NULL;
+		edge* elist=NULL;
+		FILE *txt;
+		int height = img->height;
+		int width = img->width;
+		int x,y,i,edge_num;
+		unsigned char code;
+
+
+		/* テキスト化したものを出力するファイルの読み込み */
+		if((txt = fopen(text,"wb"))==NULL){
+			printf("error: no text file[%s]\n",text);
+			exit(1);
+		}
+
+		/* グラフのノードの領域確保 */
+		graph = (node **)malloc(sizeof(node)*width);
+		if(!graph){
+			printf("memory securing misssss (graph)\n");
+			return NULL;
+		}
+		for(i=0;i<width;i++){
+			graph[i] = (node *)malloc(sizeof(node)*height);
+			if(!graph[i]){
+				printf("memory securing miss (graph[%d])\n",i);
+				return NULL;
+			}
+		}
+
+		/* グラフのエッジの領域確保 */
+		edge_num = width-1+(2*width-1)*(height-1);
+	//	elist = (edge *)malloc(sizeof(edge)*edge_num);
+	//	if(!elist){
+	//		printf("memory securing miss (elist)\n");
+	//		return NULL;
+	//	}
+
+	//	for(y = 0; y < height; y++){
+	//		for(x = 0; x < width; x++){
+				//color = cvGet2D(img,x,y);
+		//		graph[x][y].clr.val[0] = (unsigned char)img->imageData[img->widthStep * y + x ];
+				//printf("%d\n",img->imageData[img->widthStep * y + x ]);
+		//	}
+	//	}
+
+
+	//	quantizationRGB4d(graph,img->width,img->height);
+
+
+		for(y = 0; y < height; y++){
+				for(x = 0; x < width; x++){
+					for(i=0; i<256; i++){
+						if((unsigned char)img->imageData[img->widthStep * y + x ]  < (256/256)*(i+1)){
+							code = i;
+			//				printf("%d %d\n",(unsigned char)img->imageData[img->widthStep * y + x ],code);
+							break;
+						}
+					}
+					//code = graph[x][y].clr.val[0];
+					//printf("%d %d\n",graph[x][y].clr.val[0],code);
+					put_bits(txt,code,8);
+				}
+		}
+
+		/* 後処理群 */
+		//breakLink(graph,elist,edge_num,mstlist,mst_num);/* ノードとエッジのリンクを切って領域解放 */
+		/* グラフノードの領域解放 */
+		for(i=0;i<width;i++){
+			if(graph[i] != NULL){
+				free(graph[i]);
+				graph[i] = NULL;
+			}
+		}
+		if(graph != NULL){
+			free(graph);
+			graph = NULL;
+		}
+		/* エッジの領域解放 */
+		if(elist != NULL){
+			free(elist);
+			elist = NULL;
+		}
+		fclose(txt);/* ファイルクローズ */
+		return txt;
+}
+
+
+/****************************************************************************
+* 関数名 : graph2text
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : （MST化された）グラフを指定された探索法でテキスト化する関数
+* 引数   : ノード集合:graph, エッジ集合:elist, ノードの数:node_num,ファイル:text, モード:mode
+* 戻り値 : テキストファイル:txt
+****************************************************************************/
+FILE* graph2text(node** graph,edge* elist,int node_num,FILE* txt,mode nmode){
+
+	bfsearch(txt,&graph[0][0],ABOVE,nmode);
+	return txt;
+}
+
+/****************************************************************************
+* 関数名 : makeLink
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : ノードとエッジをリンクさせる関数
+* 引数   : ノードデータ:graph,エッジデータ:nedge
+* 戻り値 : なし
+****************************************************************************/
+void makeLink(node** graph,edge* elist,int edge_num,edge* mstlist, int mst_num){
+	int i,cnt;
+
+
+	for(i=cnt=0;i<edge_num;i++){
+		/* MSTとなるエッジだったらノードとリンクさせる */
+		if(elist[i].MstFlag){
+			switch(elist[i].WFlag){
+				case BELOW:	/* 下方向 */
+					elist[i].SN->w[BELOW] = (way *)malloc(sizeof(way));	/* 開始ノードの下方向 */
+					elist[i].EN->w[ABOVE] = (way *)malloc(sizeof(way));	/* 終了ノードの上方向 */
+					/* nextノード情報 */
+					elist[i].SN->w[BELOW]->next = elist[i].EN;
+					elist[i].EN->w[ABOVE]->next = elist[i].SN;
+					/* edge情報 */
+					elist[i].SN->w[BELOW]->edge = &elist[i];
+					elist[i].EN->w[ABOVE]->edge = &elist[i];
+					//					printf("a");
+					break;
+				case RIGHT:	/* 右方向 */
+					/* 領域確保 */
+					elist[i].SN->w[RIGHT] = (way *)malloc(sizeof(way));	/* 開始ノードの右方向 */
+					elist[i].EN->w[LEFT] = (way *)malloc(sizeof(way));	/* 終了ノードの左方向 */
+					/* nextノード情報 */
+					elist[i].SN->w[RIGHT]->next = elist[i].EN;
+					elist[i].EN->w[LEFT]->next = elist[i].SN;
+					/* edge情報 */
+					elist[i].SN->w[RIGHT]->edge = &elist[i];
+					elist[i].EN->w[LEFT]->edge = &elist[i];
+					//	printf("b");
+					break;
+				default:
+					break;
+			}
+			cnt++;
+			if(cnt == mst_num){ break;}
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : image2graph
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : 画像をグラフ化する関数
+* 引数   : 画像データ:img, ノード集合:graph, エッジ集合:elist, 色空間:nmode
+* 戻り値 : なし
+****************************************************************************/
+void image2graph(IplImage* img, node** graph, edge* elist,mode nmode){
+	int i,x,y,cnt;	/* 作業用 */
+	int height = img->height;	/* 画像の高さ */
+	int width = img->width;	/* 画像の幅 */
+	CvScalar color;	/* 色情報 */
+
+
+/***** グラフ頂点の作成（ここから） *****/
+	for(y = 0; y < height; y++){
+		for(x = 0; x < width; x++){
+			//* ノードの初期化 */
+			graph[x][y].coordinate[0]=x;		/* x座標 */
+			graph[x][y].coordinate[1]=y;		/* y座標 */
+			graph[x][y].parent = &graph[x][y];	/* 親情報（自身のアドレス） */
+			graph[x][y].rank = 0;				/* ランクの初期化 */
+			color = cvGet2D(img,y,x);			/* (x,y)の色情報取得 */
+			/* 各チャンネルの値を保存 */
+			graph[x][y].clr.val[0] = color.val[0];	/* B */
+			graph[x][y].clr.val[1] = color.val[1];	/* G */
+			graph[x][y].clr.val[2] = color.val[2];	/* R */
+			graph[x][y].clr.val[3] = 0;				/* グレースケールで使用。他の用途は??? */
+			/* 方向のポインタ初期化 */
+			for(i=0;i<4;i++){
+				graph[x][y].w[i] = NULL;
+			}
+		}
+	}
+	/* 用いる色空間に変換し、色情報を量子化 */
+	quantizationRGB4d(graph,img->width,img->height);	/* 64色 */
+
+
+/***** グラフ頂点の作成（ここまで） *****/
+/***** エッジの初期化（ここから） *****/
+	cnt = 0; /* エッジの数の初期化 */
+	for(y = 0; y < height; y++){
+		for(x = 0; x < width; x++){
+			/* 右方向エッジ作成 */
+			if(x < (width-1)){
+				/* 右方向エッジ作成 */
+				elist[cnt].SN = &graph[x][y];	/* エッジの始点ノード設定 */
+				elist[cnt].EN = &graph[x+1][y];	/* エッジの終点ノード設定 */
+				elist[cnt].WFlag = RIGHT;		/* 方向フラグ設定 */
+				elist[cnt].MstFlag = 0;			/* MSTフラグ初期化 */
+				setWeight(&elist[cnt],nmode);	/* 重さの設定 */
+				cnt++;
+			}
+			/* 下方向エッジ作成 */
+			if(y < (height-1)){
+				/* 下方向エッジ作成 */
+				elist[cnt].SN = &graph[x][y];	/* エッジの始点ノード設定 */
+				elist[cnt].EN = &graph[x][y+1];	/* エッジの終点ノード設定 */
+				elist[cnt].WFlag = BELOW;		/* 方向フラグ設定 */
+				elist[cnt].MstFlag = 0;			/* MSTフラグ初期化 */
+				setWeight(&elist[cnt],nmode);	/* 重さの設定 */
+				cnt++;
+			}
+		}
+	}
+/***** エッジの初期化（ここまで） *****/
+}
+
+/****************************************************************************
+* 関数名 : setWeight
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : 色空間に応じて重さを設定する関数
+* 引数   : エッジデータ:nedge, 色空間:mode
+* 戻り値 : なし
+****************************************************************************/
+void setWeight(edge* nedge,mode nmode){
+	nedge->weight= abs(nedge->SN->clr.val[0] - nedge->EN->clr.val[0])
+	+abs(nedge->SN->clr.val[1] - nedge->EN->clr.val[1])
+	+abs(nedge->SN->clr.val[2] - nedge->EN->clr.val[2]);
+}
+
+/****************************************************************************
+* 関数名 : ltsearch
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : 軽さ優先？探索でグラフを探索していきテキスト化する関数
+* 引数   : テキストファイル:txt, ノード集合:graph, 来た方向:way, 色空間:mode
+* 戻り値 : なし
+****************************************************************************/
+void ltsearch(FILE* txt,node* graph,int way,mode nmode){
+	double wtorder[4][2];	/* 重さの順番 */
+	double temp;
+	int i;
+	for(i=0; i<4; i++){
+		wtorder[i][0] = -1;
+		wtorder[i][1] = -1;
+	}
+	convert2text_mst(txt,graph,way,nmode);
+	/* 探索候補を配列に入れる */
+	if(graph->w[BELOW] && graph->w[BELOW]->edge->MstFlag){
+		if(way != BELOW){
+			wtorder[BELOW][0] = BELOW;
+			wtorder[BELOW][1] = graph->w[BELOW]->edge->weight;
+		}
+	}
+	if(graph->w[RIGHT] && graph->w[RIGHT]->edge->MstFlag){
+		if(way != RIGHT){
+			wtorder[RIGHT][0] = RIGHT;
+			wtorder[RIGHT][1] = graph->w[RIGHT]->edge->weight;
+		}
+	}
+	if(graph->w[ABOVE] && graph->w[ABOVE]->edge->MstFlag){
+		if(way != ABOVE){
+			wtorder[ABOVE][0] = ABOVE;
+			wtorder[ABOVE][1] = graph->w[ABOVE]->edge->weight;
+		}
+	}
+	if(graph->w[LEFT] && graph->w[LEFT]->edge->MstFlag){
+		if(way != LEFT){
+			wtorder[LEFT][0] = LEFT;
+			wtorder[LEFT][1] = graph->w[LEFT]->edge->weight;
+		}
+	}
+	/* 配列をソート */
+	if(wtorder[0][1] > wtorder[1][1]){
+		temp = wtorder[0][0];
+		wtorder[0][0] = wtorder[1][0];
+		wtorder[1][0] = temp;
+		temp = wtorder[0][1];
+		wtorder[0][1] = wtorder[1][1];
+		wtorder[1][1] = temp;
+	}
+	if(wtorder[2][1] > wtorder[3][1]){
+		temp = wtorder[2][0];
+		wtorder[2][0] = wtorder[3][0];
+		wtorder[3][0] = temp;
+		temp = wtorder[2][1];
+		wtorder[2][1] = wtorder[3][1];
+		wtorder[3][1] = temp;
+	}
+	if(wtorder[1][1] > wtorder[2][1]){
+		temp = wtorder[1][0];
+		wtorder[1][0] = wtorder[2][0];
+		wtorder[2][0] = temp;
+		temp = wtorder[1][1];
+		wtorder[1][1] = wtorder[2][1];
+		wtorder[2][1] = temp;
+	}
+	if(wtorder[0][1] > wtorder[1][1]){
+		temp = wtorder[0][0];
+		wtorder[0][0] = wtorder[1][0];
+		wtorder[1][0] = temp;
+		temp = wtorder[0][1];
+		wtorder[0][1] = wtorder[1][1];
+		wtorder[1][1] = temp;
+	}
+	if(wtorder[2][1] > wtorder[3][1]){
+		temp = wtorder[2][0];
+		wtorder[2][0] = wtorder[3][0];
+		wtorder[3][0] = temp;
+		temp = wtorder[2][1];
+		wtorder[2][1] = wtorder[3][1];
+		wtorder[3][1] = temp;
+	}
+	if(wtorder[1][1] > wtorder[2][1]){
+		temp = wtorder[1][0];
+		wtorder[1][0] = wtorder[2][0];
+		wtorder[2][0] = temp;
+		temp = wtorder[1][1];
+		wtorder[1][1] = wtorder[2][1];
+		wtorder[2][1] = temp;
+	}
+	/* 子ノードを探索していく */
+	for(i=0;i<4;i++){
+		if(wtorder[i][0] >= 0){
+			switch((int)wtorder[i][0]){
+				case BELOW:
+					ltsearch(txt,graph->w[BELOW]->next,ABOVE,nmode);
+					break;
+				case RIGHT:
+					ltsearch(txt,graph->w[RIGHT]->next,LEFT,nmode);
+					break;
+				case ABOVE:
+					ltsearch(txt,graph->w[ABOVE]->next,BELOW,nmode);
+					break;
+				case LEFT:
+					ltsearch(txt,graph->w[LEFT]->next,RIGHT,nmode);
+					break;
+			}
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : dfsearch
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : 深さ優先探索でグラフを探索していきテキスト化する関数
+* 引数   : テキストファイル:txt, ノード集合:graph, 来た方向:way, 色空間:mode
+* 戻り値 : なし
+****************************************************************************/
+void dfsearch(FILE* txt,node* graph,int way,mode nmode){
+	/* まず与えられたノードをテキスト化 */
+	convert2text_mst(txt,graph,way,nmode);
+	/* 繋がったノードをテキスト化する。来た方向には戻らない */
+	if(graph->w[BELOW] && graph->w[BELOW]->edge->MstFlag){
+		if(way != BELOW){
+		  //printf("a");
+			dfsearch(txt,graph->w[BELOW]->next,ABOVE,nmode);
+		}
+	}
+	if(graph->w[RIGHT] && graph->w[RIGHT]->edge->MstFlag){
+		if(way != RIGHT){
+		  //printf("b");
+			dfsearch(txt,graph->w[RIGHT]->next,LEFT,nmode);
+		}
+	}
+	if(graph->w[ABOVE] && graph->w[ABOVE]->edge->MstFlag){
+		if(way != ABOVE){
+		  //printf("c");
+			dfsearch(txt,graph->w[ABOVE]->next,BELOW,nmode);
+		}
+	}
+	if(graph->w[LEFT] && graph->w[LEFT]->edge->MstFlag){
+		if(way != LEFT){
+		  //printf("d");
+			dfsearch(txt,graph->w[LEFT]->next,RIGHT,nmode);
+		}
+	}
+	//printf("abfeifbeifbei");
+}
+
+/****************************************************************************
+* 関数名 : bfsearch
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : 幅優先探索でグラフを探索していきテキスト化する関数
+* 引数   : テキストファイル:txt, ノード集合:graph, きた方向:way, 色空間:mode
+* 戻り値 : なしだよ
+****************************************************************************/
+void bfsearch(FILE* txt,node* graph,int way,mode nmode){
+	que* first;
+	node* data = NULL;
+	int w;
+
+
+	/* 先頭のダミーノードを作成 */
+	first = (que *)malloc(sizeof(que));
+	first->data = NULL;
+	first->next = NULL;
+	first->way = NULL;
+	w = way;
+	add_que(first,graph,way);/* 最初のノードをキューに追加 */
+	/* キューにノードが無くなるまで実行 */
+	while(data = (get_que(first,&w))){
+		/* テキスト化 */
+		convert2text_mst(txt,data,w,nmode);
+		/* 子ノードをキューに追加 */
+		if(data->w[BELOW] && data->w[BELOW]->edge->MstFlag){
+			if(w != BELOW){
+				add_que(first,data->w[BELOW]->next,ABOVE);
+			}
+		}
+		if(data->w[RIGHT] && data->w[RIGHT]->edge->MstFlag){
+			if(w != RIGHT){
+				add_que(first,data->w[RIGHT]->next,LEFT);
+			}
+		}
+		if(data->w[ABOVE] && data->w[ABOVE]->edge->MstFlag){
+			if(w != ABOVE){
+				add_que(first,data->w[ABOVE]->next,BELOW);
+			}
+		}
+		if(data->w[LEFT] && data->w[LEFT]->edge->MstFlag){
+			if(w != LEFT){
+				add_que(first,data->w[LEFT]->next,RIGHT);
+			}
+		}
+	}
+}
+
+/****************************************************************************
+* 関数名 : get_que
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : キューからデータを取り出す
+* 引数   : キューの先頭:first
+* 戻り値 : データ:node*
+****************************************************************************/
+node* get_que(que* first,int* w){
+	node* data;
+	que* lp;
+	if(first->next == NULL){
+		return NULL;
+	}
+	data = first->next->data;
+	*w = first->next->way;
+	lp = first->next;
+	first->next = first->next->next;
+	free(lp);
+	lp = NULL;
+	return data;
+}
+
+/****************************************************************************
+* 関数名 : add_que
+* 作成日 :
+* 作成者 : S.Kobayashi
+* 更新日 :
+* 機能   : キューにデータを追加
+* 引数   : キューの先頭:first, 追加したいデータ:data, 来た方向:way
+* 戻り値 :
+****************************************************************************/
+void add_que(que* first, node* data,int way){
+	if(first->next != NULL){
+		while(first->next != NULL){
+			first = first->next;
+		}
+		first->next = (que *)malloc(sizeof(que));
+		first->next->data = data;
+		first->next->way = way;
+		first->next->next = NULL;
+	}else{
+		first->next = (que *)malloc(sizeof(que));
+		first->next->data = data;
+		first->next->way = way;
+		first->next->next = NULL;
+	}
+}
+
+void convert2text_mst(FILE* txt,node* graph,int way,mode nmode){
+	unsigned char code=0x00;
+	CvScalar color = graph->clr;
+	CvScalar c00,c01,c02,c03,c04,c05,c06,c07,c08,c09,c0A,c0B,c0C,c0D,c0E,c0F,
+			 c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c1A,c1B,c1C,c1D,c1E,c1F,
+			 c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c2A,c2B,c2C,c2D,c2E,c2F,
+			 c30,c31,c32,c33,c34,c35,c36,c37,c38,c39,c3A,c3B,c3C,c3D,c3E,c3F;
+	/* 使う色の指定 */
+	double a = 0x20-1, b = 0x60-1, c = 0xA0-1, d = 0xE0-1;
+	c00 = CV_RGB(a,a,a);c01 = CV_RGB(a,a,b);c02 = CV_RGB(a,a,c);c03 = CV_RGB(a,a,d);
+	c04 = CV_RGB(a,b,a);c05 = CV_RGB(a,b,b);c06 = CV_RGB(a,b,c);c07 = CV_RGB(a,b,d);
+	c08 = CV_RGB(a,c,a);c09 = CV_RGB(a,c,b);c0A = CV_RGB(a,c,c);c0B = CV_RGB(a,c,d);
+	c0C = CV_RGB(a,d,a);c0D = CV_RGB(a,d,b);c0E = CV_RGB(a,d,c);c0F = CV_RGB(a,d,d);
+	c10 = CV_RGB(b,a,a);c11 = CV_RGB(b,a,b);c12 = CV_RGB(b,a,c);c13 = CV_RGB(b,a,d);
+	c14 = CV_RGB(b,b,a);c15 = CV_RGB(b,b,b);c16 = CV_RGB(b,b,c);c17 = CV_RGB(b,b,d);
+	c18 = CV_RGB(b,c,a);c19 = CV_RGB(b,c,b);c1A = CV_RGB(b,c,c);c1B = CV_RGB(b,c,d);
+	c1C = CV_RGB(b,d,a);c1D = CV_RGB(b,d,b);c1E = CV_RGB(b,d,c);c1F = CV_RGB(b,d,d);
+	c20 = CV_RGB(c,a,a);c21 = CV_RGB(c,a,b);c22 = CV_RGB(c,a,c);c23 = CV_RGB(c,a,d);
+	c24 = CV_RGB(c,b,a);c25 = CV_RGB(c,b,b);c26 = CV_RGB(c,b,c);c27 = CV_RGB(c,b,d);
+	c28 = CV_RGB(c,c,a);c29 = CV_RGB(c,c,b);c2A = CV_RGB(c,c,c);c2B = CV_RGB(c,c,d);
+	c2C = CV_RGB(c,d,a);c2D = CV_RGB(c,d,b);c2E = CV_RGB(c,d,c);c2F = CV_RGB(c,d,d);
+	c30 = CV_RGB(d,a,a);c31 = CV_RGB(d,a,b);c32 = CV_RGB(d,a,c);c33 = CV_RGB(d,a,d);
+	c34 = CV_RGB(d,b,a);c35 = CV_RGB(d,b,b);c36 = CV_RGB(d,b,c);c37 = CV_RGB(d,b,d);
+	c38 = CV_RGB(d,c,a);c39 = CV_RGB(d,c,b);c3A = CV_RGB(d,c,c);c3B = CV_RGB(d,c,d);
+	c3C = CV_RGB(d,d,a);c3D = CV_RGB(d,d,b);c3E = CV_RGB(d,d,c);c3F = CV_RGB(d,d,d);
+	/* 使う色の数と方向によって処理を変える */
+		if(compColor(c00,color)){
+			if(way == BELOW || way == ABOVE){
+
+				code = 0x00;
+			}else{
+				code = 0x01;
+			}
+		}else if(compColor(c01,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x02;
+			}else{
+				code = 0x03;
+			}
+		}else if(compColor(c02,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x04;
+			}else{
+				code = 0x05;
+			}
+		}else if(compColor(c03,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x06;
+			}else{
+				code = 0x07;
+			}
+		}else if(compColor(c04,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x08;
+			}else{
+				code = 0x09;
+			}
+		}else if(compColor(c05,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x0A;
+			}else{
+				code = 0x0B;
+			}
+		}else if(compColor(c06,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x0C;
+			}else{
+				code = 0x0D;
+			}
+		}else if(compColor(c07,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x0E;
+			}else{
+				code = 0x0F;
+			}
+		}else if(compColor(c08,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x10;
+			}else{
+				code = 0x11;
+			}
+		}else if(compColor(c09,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x12;
+			}else{
+				code = 0x13;
+			}
+		}else if(compColor(c0A,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x14;
+			}else{
+				code = 0x15;
+			}
+		}else if(compColor(c0B,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x16;
+			}else{
+				code = 0x17;
+			}
+		}else if(compColor(c0C,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x18;
+			}else{
+				code = 0x19;
+			}
+		}else if(compColor(c0D,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x1A;
+			}else{
+				code = 0x1B;
+			}
+		}else if(compColor(c0E,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x1C;
+			}else{
+				code = 0x1D;
+			}
+		}else if(compColor(c0F,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x1E;
+			}else{
+				code = 0x1F;
+			}
+		}else if(compColor(c10,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x20;
+			}else{
+				code = 0x21;
+			}
+		}else if(compColor(c11,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x22;
+			}else{
+				code = 0x23;
+			}
+		}else if(compColor(c12,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x24;
+			}else{
+				code = 0x25;
+			}
+		}else if(compColor(c13,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x26;
+			}else{
+				code = 0x27;
+			}
+		}else if(compColor(c14,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x28;
+			}else{
+				code = 0x29;
+			}
+		}else if(compColor(c15,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x2A;
+			}else{
+				code = 0x2B;
+			}
+		}else if(compColor(c16,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x2C;
+			}else{
+				code = 0x2D;
+			}
+		}else if(compColor(c17,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x2E;
+			}else{
+				code = 0x2F;
+			}
+		}else if(compColor(c18,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x30;
+			}else{
+				code = 0x31;
+			}
+		}else if(compColor(c19,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x32;
+			}else{
+				code = 0x33;
+			}
+		}else if(compColor(c1A,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x34;
+			}else{
+				code = 0x35;
+			}
+		}else if(compColor(c1B,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x36;
+			}else{
+				code = 0x37;
+			}
+		}else if(compColor(c1C,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x38;
+			}else{
+				code = 0x39;
+			}
+		}else if(compColor(c1D,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x3A;
+			}else{
+				code = 0x3B;
+			}
+		}else if(compColor(c1E,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x3C;
+			}else{
+				code = 0x3D;
+			}
+		}else if(compColor(c1F,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x3E;
+			}else{
+				code = 0x3F;
+			}
+		}else if(compColor(c20,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x40;
+			}else{
+				code = 0x41;
+			}
+		}else if(compColor(c21,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x42;
+			}else{
+				code = 0x43;
+			}
+		}else if(compColor(c22,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x44;
+			}else{
+				code = 0x45;
+			}
+		}else if(compColor(c23,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x46;
+			}else{
+				code = 0x47;
+			}
+		}else if(compColor(c24,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x48;
+			}else{
+				code = 0x49;
+			}
+		}else if(compColor(c25,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x4A;
+			}else{
+				code = 0x4B;
+			}
+		}else if(compColor(c26,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x4C;
+			}else{
+				code = 0x4D;
+			}
+		}else if(compColor(c27,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x4E;
+			}else{
+				code = 0x4F;
+			}
+		}else if(compColor(c28,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x50;
+			}else{
+				code = 0x51;
+			}
+		}else if(compColor(c29,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x52;
+			}else{
+				code = 0x53;
+			}
+		}else if(compColor(c2A,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x54;
+			}else{
+				code = 0x55;
+			}
+		}else if(compColor(c2B,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x56;
+			}else{
+				code = 0x57;
+			}
+		}else if(compColor(c2C,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x58;
+			}else{
+				code = 0x59;
+			}
+		}else if(compColor(c2D,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x5A;
+			}else{
+				code = 0x5B;
+			}
+		}else if(compColor(c2E,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x5C;
+			}else{
+				code = 0x5D;
+			}
+		}else if(compColor(c2F,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x5E;
+			}else{
+				code = 0x5F;
+			}
+		}else if(compColor(c30,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x60;
+			}else{
+				code = 0x61;
+			}
+		}else if(compColor(c31,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x62;
+			}else{
+				code = 0x63;
+			}
+		}else if(compColor(c32,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x64;
+			}else{
+				code = 0x65;
+			}
+		}else if(compColor(c33,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x66;
+			}else{
+				code = 0x67;
+			}
+		}else if(compColor(c34,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x68;
+			}else{
+				code = 0x69;
+			}
+		}else if(compColor(c35,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x6A;
+			}else{
+				code = 0x6B;
+			}
+		}else if(compColor(c36,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x6C;
+			}else{
+				code = 0x6D;
+			}
+		}else if(compColor(c37,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x6E;
+			}else{
+				code = 0x6F;
+			}
+		}else if(compColor(c38,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x70;
+			}else{
+				code = 0x71;
+			}
+		}else if(compColor(c39,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x72;
+			}else{
+				code = 0x73;
+			}
+		}else if(compColor(c3A,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x74;
+			}else{
+				code = 0x75;
+			}
+		}else if(compColor(c3B,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x76;
+			}else{
+				code = 0x77;
+			}
+		}else if(compColor(c3C,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x78;
+			}else{
+				code = 0x79;
+			}
+		}else if(compColor(c3D,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x7A;
+			}else{
+				code = 0x7B;
+			}
+		}else if(compColor(c3E,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x7C;
+			}else{
+				code = 0x7D;
+			}
+		}else if(compColor(c3F,color)){
+			if(way == BELOW || way == ABOVE){
+				code = 0x7E;
+			}else{
+				code = 0x7F;
+			}
+		}
+	/* codeをファイルに書き出す */
+	put_bits(txt,code,8);
+	//printf("%d\n",code);
+}

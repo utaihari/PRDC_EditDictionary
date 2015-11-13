@@ -1,0 +1,23 @@
+﻿#ifndef INCLUDE_CHORE
+#define INCLUDE_CHORE
+
+
+#include"lzw.h"
+#include"ds.h"
+#include"cv-mst.h"
+#include"k-means.h"
+
+
+//void Wrath_of_God(int n,int cutimage_size,filenn fnn);
+patch_graph* finalize_pgr(patch_graph *pgr,int n);
+lzw_node** finalize_dics(lzw_node** dics,int dnum);
+//void Irrigation_Ditch(patch_graph *pgr,filenn fnn,int cutimagge_size);
+void Accumulated_Knowledge(point *data,int n,int d,point *dic);
+//void Accumulated_Knowledge2(point *data,filenn fnn,int cutimage_size,int n,int d,int quo_ul);
+//void Arcbound_Overseer2(patch_graph *pgr,int n,int k,int cutimage_size,filenn fnn);
+//void Arcbound_Overseer(patch_graph *pgr,int n,int k,int cutimage_size,filenn fnn);
+//void Arcbound_Worker(int cutimage_size,patch_graph *pgr,int k,filenn fnn);
+void OutCVcsv(point *data, int n,int d,point *dic,int k);
+void Out_Features(patch_graph *data, int n,int d,dict *dic,dict *, char* filename);
+
+#endif

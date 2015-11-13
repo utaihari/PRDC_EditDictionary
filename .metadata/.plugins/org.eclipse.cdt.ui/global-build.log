@@ -1,0 +1,192 @@
+
+**** Clean-only build of configuration Release for project MasterResearch ****
+
+make clean 
+rm -rf  ./src/Kruskal.o ./src/MasterResearch.o ./src/bitIO.o ./src/chore.o ./src/cv-mst.o ./src/image2text.o ./src/k-means.o ./src/lzw.o ./src/main.o ./src/msort.o  ./src/Kruskal.d ./src/MasterResearch.d ./src/bitIO.d ./src/chore.d ./src/cv-mst.d ./src/image2text.d ./src/k-means.d ./src/lzw.d ./src/main.d ./src/msort.d  MasterResearch
+ 
+
+**** Build Finished ****
+
+**** Clean-only build of configuration Debug for project MasterResearch ****
+
+make clean 
+rm -rf  ./src/Kruskal.o ./src/MasterResearch.o ./src/bitIO.o ./src/chore.o ./src/cv-mst.o ./src/image2text.o ./src/k-means.o ./src/lzw.o ./src/main.o ./src/msort.o  ./src/Kruskal.d ./src/MasterResearch.d ./src/bitIO.d ./src/chore.d ./src/cv-mst.d ./src/image2text.d ./src/k-means.d ./src/lzw.d ./src/main.d ./src/msort.d  MasterResearch
+ 
+
+**** Build Finished ****
+
+**** Build of configuration Debug for project MasterResearch ****
+
+make all 
+Building file: ../src/MasterResearch.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/MasterResearch.d" -MT"src/MasterResearch.d" -o "src/MasterResearch.o" "../src/MasterResearch.cpp"
+Finished building: ../src/MasterResearch.cpp
+ 
+Building file: ../src/bitIO.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/bitIO.d" -MT"src/bitIO.d" -o "src/bitIO.o" "../src/bitIO.cpp"
+Finished building: ../src/bitIO.cpp
+ 
+Building file: ../src/chore.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/chore.d" -MT"src/chore.d" -o "src/chore.o" "../src/chore.cpp"
+../src/chore.cpp: 関数 ‘patch_graph* finalize_pgr(patch_graph*, int)’ 内:
+../src/chore.cpp:31:23: 警告: NULL から非ポインタ型 ‘double’ へ変換しています [-Wconversion-null]
+../src/chore.cpp:32:23: 警告: NULL から非ポインタ型 ‘double’ へ変換しています [-Wconversion-null]
+../src/chore.cpp:33:23: 警告: NULL から非ポインタ型 ‘double’ へ変換しています [-Wconversion-null]
+Finished building: ../src/chore.cpp
+ 
+Building file: ../src/image2text.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/image2text.d" -MT"src/image2text.d" -o "src/image2text.o" "../src/image2text.cpp"
+../src/image2text.cpp:8:20: 致命的エラー: Kruskal.h: そのようなファイルやディレクトリはありません
+コンパイルを停止しました。
+make: *** [src/image2text.o] エラー 1
+
+**** Build Finished ****
+
+**** Build of configuration Debug for project MasterResearch ****
+
+make all 
+Building file: ../src/image2text.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/image2text.d" -MT"src/image2text.d" -o "src/image2text.o" "../src/image2text.cpp"
+Finished building: ../src/image2text.cpp
+ 
+Building file: ../src/k-means.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/k-means.d" -MT"src/k-means.d" -o "src/k-means.o" "../src/k-means.cpp"
+../src/k-means.cpp: 関数 ‘void k_means(point*, classify*, int, int, int, mode)’ 内:
+../src/k-means.cpp:44:32: 警告: 使用されない変数 ‘hrg’ です [-Wunused-variable]
+../src/k-means.cpp:47:7: 警告: 使用されない変数 ‘buff’ です [-Wunused-variable]
+../src/k-means.cpp:97:9: 警告: 使用されない変数 ‘e’ です [-Wunused-variable]
+../src/k-means.cpp:98:7: 警告: 変数 ‘fin’ が設定されましたが使用されていません [-Wunused-but-set-variable]
+Finished building: ../src/k-means.cpp
+ 
+Building file: ../src/lzw.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/lzw.d" -MT"src/lzw.d" -o "src/lzw.o" "../src/lzw.cpp"
+../src/lzw.cpp: 関数 ‘void output_phrase(lzw_node*)’ 内:
+../src/lzw.cpp:112:7: 警告: 変数 ‘pre_n’ が設定されましたが使用されていません [-Wunused-but-set-variable]
+../src/lzw.cpp:112:13: 警告: 使用されない変数 ‘now_n’ です [-Wunused-variable]
+../src/lzw.cpp:112:19: 警告: 変数 ‘plength’ が設定されましたが使用されていません [-Wunused-but-set-variable]
+../src/lzw.cpp:115:6: 警告: 使用されない変数 ‘count’ です [-Wunused-variable]
+Finished building: ../src/lzw.cpp
+ 
+Building file: ../src/main.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.d" -o "src/main.o" "../src/main.cpp"
+../src/main.cpp: 関数 ‘void SelectProposal(int, dict*, dict*, mode, int, bool)’ 内:
+../src/main.cpp:472:6: 警告: 使用されない変数 ‘count’ です [-Wunused-variable]
+Finished building: ../src/main.cpp
+ 
+Building file: ../src/msort.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/msort.d" -MT"src/msort.d" -o "src/msort.o" "../src/msort.cpp"
+Finished building: ../src/msort.cpp
+ 
+Building target: MasterResearch
+Invoking: GCC C++ Linker
+g++ -L/usr/local/lib -L/usr/include -pg -o "MasterResearch"  ./src/MasterResearch.o ./src/bitIO.o ./src/chore.o ./src/image2text.o ./src/k-means.o ./src/lzw.o ./src/main.o ./src/msort.o   -lopencv_highgui -lopencv_core -lopencv_imgproc
+Finished building target: MasterResearch
+ 
+
+**** Build Finished ****
+
+**** Build of configuration Debug for project MasterResearch ****
+
+make all 
+Building file: ../src/chore.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/chore.d" -MT"src/chore.d" -o "src/chore.o" "../src/chore.cpp"
+../src/chore.cpp: 関数 ‘patch_graph* finalize_pgr(patch_graph*, int)’ 内:
+../src/chore.cpp:31:23: 警告: NULL から非ポインタ型 ‘double’ へ変換しています [-Wconversion-null]
+../src/chore.cpp:32:23: 警告: NULL から非ポインタ型 ‘double’ へ変換しています [-Wconversion-null]
+../src/chore.cpp:33:23: 警告: NULL から非ポインタ型 ‘double’ へ変換しています [-Wconversion-null]
+Finished building: ../src/chore.cpp
+ 
+Building file: ../src/image2text.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/image2text.d" -MT"src/image2text.d" -o "src/image2text.o" "../src/image2text.cpp"
+Finished building: ../src/image2text.cpp
+ 
+Building file: ../src/k-means.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/k-means.d" -MT"src/k-means.d" -o "src/k-means.o" "../src/k-means.cpp"
+../src/k-means.cpp: 関数 ‘void k_means(point*, classify*, int, int, int, mode)’ 内:
+../src/k-means.cpp:99:3: エラー: ‘fin’ was not declared in this scope
+make: *** [src/k-means.o] エラー 1
+
+**** Build Finished ****
+
+**** Build of configuration Debug for project MasterResearch ****
+
+make all 
+Building file: ../src/k-means.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/k-means.d" -MT"src/k-means.d" -o "src/k-means.o" "../src/k-means.cpp"
+../src/k-means.cpp: 関数 ‘void k_means(point*, classify*, int, int, int, mode)’ 内:
+../src/k-means.cpp:96:9: 警告: 使用されない変数 ‘e’ です [-Wunused-variable]
+../src/k-means.cpp:97:7: 警告: 変数 ‘fin’ が設定されましたが使用されていません [-Wunused-but-set-variable]
+Finished building: ../src/k-means.cpp
+ 
+Building file: ../src/lzw.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/lzw.d" -MT"src/lzw.d" -o "src/lzw.o" "../src/lzw.cpp"
+../src/lzw.cpp: 関数 ‘void output_phrase(lzw_node*)’ 内:
+../src/lzw.cpp:112:7: 警告: 変数 ‘pre_n’ が設定されましたが使用されていません [-Wunused-but-set-variable]
+../src/lzw.cpp:112:13: 警告: 使用されない変数 ‘now_n’ です [-Wunused-variable]
+../src/lzw.cpp:112:19: 警告: 変数 ‘plength’ が設定されましたが使用されていません [-Wunused-but-set-variable]
+Finished building: ../src/lzw.cpp
+ 
+Building file: ../src/main.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.d" -o "src/main.o" "../src/main.cpp"
+../src/main.cpp: 関数 ‘void SelectProposal(int, dict*, dict*, mode, int, bool)’ 内:
+../src/main.cpp:472:6: 警告: 使用されない変数 ‘count’ です [-Wunused-variable]
+Finished building: ../src/main.cpp
+ 
+Building target: MasterResearch
+Invoking: GCC C++ Linker
+g++ -L/usr/local/lib -L/usr/include -pg -o "MasterResearch"  ./src/MasterResearch.o ./src/bitIO.o ./src/chore.o ./src/image2text.o ./src/k-means.o ./src/lzw.o ./src/main.o ./src/msort.o   -lopencv_highgui -lopencv_core -lopencv_imgproc
+Finished building target: MasterResearch
+ 
+
+**** Build Finished ****
+
+**** Build of configuration Debug for project MasterResearch ****
+
+make all 
+Building file: ../src/main.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.d" -o "src/main.o" "../src/main.cpp"
+../src/main.cpp: 関数 ‘void SelectProposal(int, dict*, dict*, mode, int, bool)’ 内:
+../src/main.cpp:478:6: 警告: 使用されない変数 ‘count’ です [-Wunused-variable]
+Finished building: ../src/main.cpp
+ 
+Building target: MasterResearch
+Invoking: GCC C++ Linker
+g++ -L/usr/local/lib -L/usr/include -pg -o "MasterResearch"  ./src/MasterResearch.o ./src/bitIO.o ./src/chore.o ./src/image2text.o ./src/k-means.o ./src/lzw.o ./src/main.o ./src/msort.o   -lopencv_highgui -lopencv_core -lopencv_imgproc
+Finished building target: MasterResearch
+ 
+
+**** Build Finished ****
+
+**** Build of configuration Debug for project MasterResearch ****
+
+make all 
+Building file: ../src/main.cpp
+Invoking: GCC C++ Compiler
+g++ -I/usr/local/include/opencv2 -I/usr/include/c++/4.6/i686-linux-gnu/64/bits -I/usr/local/include/opencv -O0 -g3 -pg -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.d" -o "src/main.o" "../src/main.cpp"
+../src/main.cpp: 関数 ‘void SelectProposal(int, dict*, dict*, mode, int, bool)’ 内:
+../src/main.cpp:478:6: 警告: 使用されない変数 ‘count’ です [-Wunused-variable]
+Finished building: ../src/main.cpp
+ 
+Building target: MasterResearch
+Invoking: GCC C++ Linker
+g++ -L/usr/local/lib -L/usr/include -pg -o "MasterResearch"  ./src/MasterResearch.o ./src/bitIO.o ./src/chore.o ./src/image2text.o ./src/k-means.o ./src/lzw.o ./src/main.o ./src/msort.o   -lopencv_highgui -lopencv_core -lopencv_imgproc
+Finished building target: MasterResearch
+ 
+
+**** Build Finished ****

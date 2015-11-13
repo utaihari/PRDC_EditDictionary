@@ -1,0 +1,112 @@
+﻿#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+#include<time.h>
+#include<math.h>
+#include<float.h>
+#include"chore.h"
+
+#define RESULT "/home/ynakajima/workspace/UCMerced_LandUse/result"
+
+/****************************************************************************
+* 関数名 : finalize_pgr
+* 作成日 : 
+* 作成者 : Nakajima.M
+* 更新日 : 
+* 機能   : 辞書群のメモリ解放関数
+* 引数   : 辞書群:dics, 辞書数:dnum
+* 戻り値 : NULL
+****************************************************************************/
+patch_graph* finalize_pgr(patch_graph *pgr,int n){
+	int i;
+	for(i=0;i<n;i++){
+		if(pgr[i].cv_num != NULL){
+				free(pgr[i].cv_num);
+				pgr[i].cv_num = NULL;
+		}
+		pgr[i].pgredge[0] = NULL;
+		pgr[i].pgredge[1] = NULL;
+		pgr[i].pgredge[2] = NULL;
+		pgr[i].pgredge[3] = NULL;
+		pgr[i].color_ave[0]=NULL;
+		pgr[i].color_ave[1]=NULL;
+		pgr[i].color_ave[2]=NULL;
+	}
+	if(pgr != NULL){
+		free(pgr);
+		pgr = NULL;
+	}
+	/*patch_graph削除*/
+
+	return NULL;
+}
+
+/****************************************************************************
+* 関数名 : finalize_dics
+* 作成日 : 
+* 作成者 : S.Kobayashi
+* 更新日 : 
+* 機能   : 辞書群のメモリ解放関数
+* 引数   : 辞書群:dics, 辞書数:dnum
+* 戻り値 : NULL
+****************************************************************************/
+lzw_node** finalize_dics(lzw_node** dics,int dnum){
+	int i;
+	for(i=0;i<dnum;i++){
+		if(dics[i] != NULL){
+			free(dics[i]);
+			dics[i] = NULL;
+		}
+	}
+	if(dics != NULL){
+		free(dics);
+		dics = NULL;
+	}
+	return NULL;
+}
+
+
+
+/****************************************************************************
+* 関数名 : Out_Features
+* 作成日 :
+* 作成者 : Yuji Nakajima
+* 更新日 :
+* 機能   : 圧縮ベクトルをcsvに出力
+* 引数   : データ、パッチ数
+* 戻り値 : なし
+****************************************************************************/
+void Out_Features(patch_graph *data, int n,int d,dict *dic,dict *dic_lbp, char* filename){
+
+	int i,j;
+	FILE *fp;
+	char result[64];
+
+
+		sprintf(result,RESULT"/%s.csv",filename);
+		if((fp = fopen(result,"wb"))==NULL){
+			printf("file name miss\n");
+			exit(1);
+		}
+		fprintf(fp,"num=%d,",n);
+		//fprintf(fp,"dimension=%d,",d);
+		for(j=0;j<d;j++){
+			fprintf(fp,"%s,",dic[j].id);
+		}
+		for(j=0;j<d;j++){
+			fprintf(fp,"%s,",dic_lbp[j].id);
+		}
+
+		fprintf(fp,"\n");
+		for(i=0;i<n;i++){
+			fprintf(fp,"%s,",data[i].id);
+			//fprintf(fp,"%d,",data[i].clnum);
+			for(j=0;j<d*2;j++){
+				fprintf(fp,"%lf,",data[i].cv_num[j]);
+			}
+			fprintf(fp,"\n");
+		}
+		fclose(fp);
+
+
+}
